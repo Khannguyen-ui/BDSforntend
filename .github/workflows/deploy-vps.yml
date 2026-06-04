@@ -1,0 +1,59 @@
+name: Deploy Frontend to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy frontend via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            set -e
+
+            echo "=== Go to frontend project ==="
+            cd /opt/homeverse/bdsfrontend
+
+            echo "=== Pull latest frontend code ==="
+            git remote set-url origin https://github.com/Khannguyen-ui/BDSforntend.git
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "=== Install dependencies ==="
+            npm install
+
+            echo "=== Build frontend ==="
+            npm run build
+
+            echo "=== Deploy dist to nginx static folder ==="
+            rm -rf /opt/homeverse/frontend-dist/*
+            cp -r dist/* /opt/homeverse/frontend-dist/
+
+            echo "=== Check deployed files ==="
+            ls -la /opt/homeverse/frontend-dist
+            ls -la /opt/homeverse/frontend-dist/assets
+
+            echo "=== Restart nginx ==="
+            cd /opt/homeverse/Property_System
+            docker exec nginx-proxy nginx -t
+            docker restart nginx-proxy
+
+            echo "=== Test routes ==="
+            curl -I http://localhost
+            curl -I http://localhost/login
+            curl -I http://localhost/admin/login
+            curl -I http://localhost/search/properties
+
+            echo "=== Frontend deploy completed ==="
