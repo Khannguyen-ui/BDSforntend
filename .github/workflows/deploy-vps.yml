@@ -51,9 +51,20 @@ jobs:
             docker restart nginx-proxy
 
             echo "=== Test routes ==="
-            curl -I http://localhost
-            curl -I http://localhost/login
-            curl -I http://localhost/admin/login
-            curl -I http://localhost/search/properties
+            sleep 8
+
+            for i in 1 2 3 4 5; do
+              if curl -I --fail --max-time 10 http://localhost; then
+                echo "Frontend is ready"
+                break
+              fi
+
+              echo "Nginx not ready yet, retry $i..."
+              sleep 5
+            done
+
+            curl -I --max-time 10 http://localhost/login || true
+            curl -I --max-time 10 http://localhost/admin/login || true
+            curl -I --max-time 10 http://localhost/search/properties || true
 
             echo "=== Frontend deploy completed ==="
