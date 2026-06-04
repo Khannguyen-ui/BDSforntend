@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = getSessionItem('accessToken');
       if (token) {
-        await authService.logout(); 
+        await authService.logout();
       }
     } catch (e) {
       console.warn("Lỗi khi gọi API Đăng xuất (Backend):", e);
@@ -56,8 +56,8 @@ export const AuthProvider = ({ children }) => {
       const res = await userService.getProfile();
       const profileData = res.data?.result || res.data.result;
 
-      // 🧠 LOGIC BỰC VƯỢT LỖI BACKEND: Nếu kycStatus là VERIFIED, ép cứng role thành LANDLORD
-      const finalRole = profileData.kycStatus === 'VERIFIED' ? 'LANDLORD' : (profileData.role || getSessionItem('role'));
+      
+      const finalRole = profileData.role || getSessionItem('role');
 
       if (profileData) {
         setSessionItem('role', finalRole);

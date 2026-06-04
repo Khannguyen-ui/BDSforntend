@@ -132,7 +132,7 @@ const KycVerification = () => {
 
                     if (newToken) {
                         sessionStorage.setItem(`${userSessionId}_accessToken`, newToken);
-                        sessionStorage.setItem(`${userSessionId}_role`, 'LANDLORD');
+                        sessionStorage.setItem(`${userSessionId}_role`, 'OWNER');
                     }
                 } catch (refreshErr) {
                     console.warn("Lỗi refresh token, tiếp tục bằng token hiện tại:", refreshErr);
@@ -151,7 +151,7 @@ const KycVerification = () => {
                         <div className="space-y-3 mt-2">
                             <p className="font-medium text-gray-700">Hệ thống AI đã tự động xác minh thông tin giấy tờ của bạn thành công!</p>
                             <p className="text-gray-600 text-sm">
-                                Tài khoản của bạn đã được nâng cấp lên nhóm quyền <b>CHỦ NHÀ (LANDLORD)</b>. Bây giờ bạn có thể ngay lập tức đăng tin, đẩy tin và quản lý phòng trọ của mình.
+                                Tài khoản của bạn đã được nâng cấp lên nhóm quyền <b>Mô giới (OWNER)</b>.. Bây giờ bạn có thể ngay lập tức đăng tin, đẩy tin và quản lý phòng trọ của mình.
                             </p>
                             <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center text-xs text-green-700 font-semibold">
                                 Hệ thống sẽ chuyển hướng và làm mới bảng điều khiển.

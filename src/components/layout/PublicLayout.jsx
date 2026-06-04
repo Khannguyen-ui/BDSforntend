@@ -35,7 +35,7 @@ const PublicLayout = () => {
       return;
     }
 
-    if (user.role === 'LANDLORD') {
+    if (user.role === 'OWNER') {
       navigate('/landlord/create-room');
     } else if (user.role === 'ADMIN') {
       message.warning("Admin không đăng tin trực tiếp.");
@@ -120,8 +120,8 @@ const PublicLayout = () => {
         { type: 'divider' },
       ] : []),
 
-      // Menu cho CHỦ TRỌ
-      ...(user?.role === 'LANDLORD' ? [
+      // Menu 
+      ...(user?.role === 'OWNER' ? [
         {
           key: 'dashboard',
           label: <span className="font-bold">Tổng quan <Tag color="red" className="ml-1 text-[10px]">Mới</Tag></span>,
@@ -148,8 +148,8 @@ const PublicLayout = () => {
         },
       ] : []),
 
-      // Menu cho NGƯỜI THUÊ
-      ...((user?.role === 'TENANT' || user?.role === 'USER') ? [
+      // Menu cho User
+      ...(user?.role === 'USER' ? [
         {
           key: 'my-appointments',
           label: 'Lịch hẹn của tôi',
@@ -228,7 +228,7 @@ const PublicLayout = () => {
 
             {/* NÚT REELS TỔNG - LUÔN HIỆN ĐỂ TEST */}
             <Tooltip title="Lướt Video (Reels)">
-              <div 
+              <div
                 className="cursor-pointer flex items-center justify-center bg-gray-100 hover:bg-orange-100 w-9 h-9 rounded-full transition-colors"
                 onClick={() => setIsReelsOpen(true)}
               >
@@ -292,9 +292,7 @@ const PublicLayout = () => {
                 <Link to="/login">
                   <Button type="text" className="font-medium hover:bg-gray-100 rounded-full">Đăng nhập</Button>
                 </Link>
-                {/* <Link to="/register-landlord">
-                  <Button type="text" className="font-medium hover:bg-gray-100 rounded-full">Đăng ký Chủ trọ</Button>
-                </Link> */}
+               
               </Space>
             )}
           </div>
@@ -314,9 +312,9 @@ const PublicLayout = () => {
       </footer>
 
       {/* REELS VIEWER TỪ TRANG CHỦ */}
-      <ReelsViewer 
-        isOpen={isReelsOpen} 
-        onClose={() => setIsReelsOpen(false)} 
+      <ReelsViewer
+        isOpen={isReelsOpen}
+        onClose={() => setIsReelsOpen(false)}
       />
     </div>
   );

@@ -42,8 +42,8 @@ const Sidebar = () => {
   const location = useLocation();
 
   // Xác định Role
-  const isLandlord = user?.role === 'LANDLORD';
-  const isTenant = user?.role === 'TENANT';
+  const isLandlord = user?.role === 'OWNER';
+  const isTenant = user?.role === 'USER';
 
   // Lấy unreadCount từ Context
   const { unreadCount } = useNotification();
@@ -51,7 +51,7 @@ const Sidebar = () => {
   // State lưu số dư thực tế
   const [realTimeBalance, setRealTimeBalance] = useState(user?.accountBalance || 0);
 
-  // Effect: Gọi API lấy số dư (CHỈ GỌI KHI LÀ LANDLORD)
+  
   useEffect(() => {
     const fetchLatestBalance = async () => {
       if (user?.id && isLandlord) {
@@ -188,8 +188,8 @@ const Sidebar = () => {
   const getMenuItems = () => {
     switch (user?.role) {
       case 'ADMIN': return adminItems;
-      case 'LANDLORD': return landlordItems;
-      case 'TENANT': return tenantItems;
+      case 'OWNER': return landlordItems;
+      case 'USER': return tenantItems;
       default: return [
         {
           type: 'group', label: 'Tiện ích', children: [
@@ -241,7 +241,7 @@ const Sidebar = () => {
           <Avatar size={64} icon={<UserOutlined />} src={user.avatar} className="mb-2" />
           <Text strong className="text-lg">{user.fullName || 'Người dùng'}</Text>
 
-          {/* --- TRƯỜNG HỢP 1: LANDLORD (Hiện ví tiền) --- */}
+        
           {isLandlord && (
             <>
               <Text type="secondary" className="text-xs mb-2">{user.point || 0} điểm</Text>
@@ -263,7 +263,7 @@ const Sidebar = () => {
             </>
           )}
 
-          {/* --- TRƯỜNG HỢP 2: TENANT (Hiện nút Nâng cấp) --- */}
+     
           {isTenant && (
             <div className="w-full mt-3">
               <div className="bg-orange-50 p-2 rounded border border-orange-200 text-center">

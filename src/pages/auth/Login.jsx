@@ -31,8 +31,8 @@ const Login = () => {
             return;
           }
 
-          if (role === 'LANDLORD' || role === 'ROLE_LANDLORD') {
-            message.success("Chào mừng Chủ trọ quay trở lại!");
+          if (role === 'OWNER' || role === 'ROLE_OWNER') {
+            message.success("Chào mừng bạn quay trở lại!");
             navigate('/');
           } else {
             message.success("Đăng nhập thành công!");

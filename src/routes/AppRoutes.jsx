@@ -13,7 +13,7 @@ import PublicLayout from '../components/layout/PublicLayout';
 import Login from '../pages/auth/Login';
 import AdminLogin from '../pages/auth/AdminLogin';
 import Register from '../pages/auth/Register';
-import RegisterLandlord from '../pages/auth/RegisterLandlord';
+
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import OAuth2Redirect from '../pages/auth/OAuth2Redirect';
@@ -34,7 +34,7 @@ import PaymentSuccess from '../pages/common/PaymentSuccess';
 import PaymentFailed from '../pages/common/PaymentFailed';
 import MyFavorites from '../pages/common/MyFavorites';
 
-// --- LANDLORD PAGES ---
+// --- OWNER PAGES ---
 import LandlordDashboard from '../pages/landlord/LandlordDashboard';
 import CreateRoom from '../pages/landlord/CreateRoom';
 import MyRooms from '../pages/landlord/MyRooms';
@@ -63,7 +63,6 @@ const AppRoutes = () => {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/login-success" element={<OAuth2Redirect />} />
             <Route path="/register" element={<Register />} />
-            {/* <Route path="/register-landlord" element={<RegisterLandlord />} /> */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -83,9 +82,9 @@ const AppRoutes = () => {
 
             {/* ========================================================= */}
             {/* 2. USER ROUTES - USER PROTECTED ROUTE                      */}
-            {/* Cho: USER, TENANT, LANDLORD                               */}
+            {/* Cho: USER,                                */}
             {/* ========================================================= */}
-            <Route element={<UserProtectedRoute allowedRoles={['USER', 'TENANT', 'LANDLORD']} />}>
+            <Route element={<UserProtectedRoute allowedRoles={['USER', 'OWNER']} />}>
                 <Route element={<MainLayout />}>
                     {/* Common cho tất cả user đã login */}
                     <Route path="/profile" element={<UserProfile />} />
@@ -99,9 +98,9 @@ const AppRoutes = () => {
             </Route>
 
             {/* ========================================================= */}
-            {/* 3. LANDLORD ONLY - USER PROTECTED ROUTE                    */}
+            {/* 3. OWNER ONLY - USER PROTECTED ROUTE                    */}
             {/* ========================================================= */}
-            <Route element={<UserProtectedRoute allowedRoles={['LANDLORD']} />}>
+            <Route element={<UserProtectedRoute allowedRoles={['OWNER']} />}>
                 <Route path="/landlord" element={<MainLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<LandlordDashboard />} />

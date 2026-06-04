@@ -13,7 +13,7 @@ const NotFound = () => {
   const handleGoHome = () => {
     if (user?.role === 'ADMIN') {
       navigate('/admin/dashboard');
-    } else if (user?.role === 'LANDLORD') {
+    } else if (user?.role === 'OWNER') {
       navigate('/landlord/dashboard');
     } else {
       navigate('/');

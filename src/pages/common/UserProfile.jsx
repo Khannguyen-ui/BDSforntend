@@ -240,7 +240,7 @@ const UserProfile = () => {
   const editInfoTabContent = (
     <Form form={form} layout="vertical" onFinish={handleUpdateInfo} className="max-w-3xl">
       {/* 🟢 ALERT NHẮC NHỞ LÀM MỚI QUYỀN */}
-      {user?.kycStatus === 'VERIFIED' && (user?.role === 'USER' || user?.role === 'TENANT') && (
+      {user?.kycStatus === 'VERIFIED' && user?.role === 'USER' && (
         <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
           <div>
             <h4 className="text-orange-800 font-bold mb-1">Tài khoản đã được xác minh KYC!</h4>

@@ -20,11 +20,11 @@ const Register = () => {
         email: values.email,
         password: values.password,
         phone: values.phone,
-        role: 'TENANT' // Role cho Người thuê
+        role: 'USER' // Role cho Người thuê
       };
 
       await authService.register(payload);
-      
+
       message.success("Đăng ký thành công! Hãy đăng nhập để tìm phòng.");
       navigate('/login');
 
@@ -38,8 +38,8 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
-      <Card 
-        className="w-full max-w-lg shadow-2xl rounded-xl" 
+      <Card
+        className="w-full max-w-lg shadow-2xl rounded-xl"
         bordered={false}
       >
         <div className="text-center mb-6">
@@ -80,8 +80,8 @@ const Register = () => {
               <Form.Item
                 name="phone"
                 rules={[
-                    { required: true, message: 'Nhập SĐT!' },
-                    { pattern: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
+                  { required: true, message: 'Nhập SĐT!' },
+                  { pattern: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
                 ]}
               >
                 <Input prefix={<PhoneOutlined />} placeholder="Số điện thoại" />
@@ -117,32 +117,26 @@ const Register = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               className="w-full bg-blue-600 hover:bg-blue-500 border-none h-12 font-bold text-lg rounded-lg"
               loading={loading}
             >
               ĐĂNG KÝ
             </Button>
           </Form.Item>
-          
+
           <div className="text-center mt-2 flex flex-col gap-2">
             <div>
-                <Text>Đã có tài khoản? </Text>
-                <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+              <Text>Đã có tài khoản? </Text>
+              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
                 Đăng nhập ngay
-                </Link>
+              </Link>
             </div>
-            
+
             <Divider plain style={{ margin: '10px 0', fontSize: '12px' }}>Hoặc</Divider>
-            
-            {/* <div>
-                <Text type="secondary" className="text-xs">Bạn có phòng cho thuê?</Text> <br/>
-                <Link to="/register-landlord" className="text-green-600 font-bold hover:underline">
-                    Đăng ký làm Chủ Trọ
-                </Link>
-            </div> */}
+
           </div>
         </Form>
       </Card>

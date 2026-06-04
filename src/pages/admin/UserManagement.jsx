@@ -43,7 +43,7 @@ const UserManagement = () => {
       const kycRes = await adminService.getPendingKycUsers().catch(() => ({ data: { result: [] } }));
       const kycData = kycRes.data?.result || kycRes.data || [];
       setPendingKycList(Array.isArray(kycData) ? kycData : []);
-      
+
       // Lấy danh sách tất cả người dùng (API mới đã được implement)
       const usersRes = await adminService.getAllUsers().catch(() => ({ data: { result: [] } }));
       const usersData = usersRes.data?.result || usersRes.data || [];
@@ -158,17 +158,17 @@ const UserManagement = () => {
   // --- Render Nội dung Modal KYC ---
   const renderKycContent = () => {
     if (!selectedKycUser) return null;
-    
+
     // Xử lý mảng ảnh vì backend FastAPI có thể trả về string JSON hoặc mảng trực tiếp
     const rawImgs = selectedKycUser.citizenImages || selectedKycUser.citizen_images;
     let imgs = [];
     if (Array.isArray(rawImgs)) {
       imgs = rawImgs;
     } else if (typeof rawImgs === 'string') {
-      try { 
-        imgs = JSON.parse(rawImgs); 
-      } catch (e) { 
-        imgs = [rawImgs]; 
+      try {
+        imgs = JSON.parse(rawImgs);
+      } catch (e) {
+        imgs = [rawImgs];
       }
     }
 
@@ -231,7 +231,7 @@ const UserManagement = () => {
     {
       title: 'Vai trò',
       dataIndex: 'role',
-      render: (role) => <Tag color={role === 'ADMIN' ? 'red' : (role === 'LANDLORD' ? 'green' : 'blue')}>{role}</Tag>
+      render: (role) => <Tag color={role === 'ADMIN' ? 'red' : (role === 'OWNER' ? 'green' : 'blue')}>{role}</Tag>
     },
     {
       title: 'Định danh (KYC)',
@@ -367,10 +367,10 @@ const UserManagement = () => {
             <Form.Item name="fullName" label="Họ tên" rules={[{ required: true }]}><Input /></Form.Item>
             <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input disabled={!!editingUser} /></Form.Item>
             <Form.Item name="phone" label="SĐT"><Input /></Form.Item>
-            <Form.Item name="role" label="Vai trò" initialValue="TENANT">
+            <Form.Item name="role" label="Vai trò" initialValue="USER">
               <Select>
-                <Option value="TENANT">Người thuê</Option>
-                <Option value="LANDLORD">Chủ trọ</Option>
+                <Option value="USER">Người dùng</Option>
+                <Option value="OWNER">Mô giới</Option>
                 <Option value="ADMIN">Admin</Option>
               </Select>
             </Form.Item>
