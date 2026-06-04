@@ -137,12 +137,12 @@ const Register = () => {
             
             <Divider plain style={{ margin: '10px 0', fontSize: '12px' }}>Hoặc</Divider>
             
-            <div>
+            {/* <div>
                 <Text type="secondary" className="text-xs">Bạn có phòng cho thuê?</Text> <br/>
                 <Link to="/register-landlord" className="text-green-600 font-bold hover:underline">
                     Đăng ký làm Chủ Trọ
                 </Link>
-            </div>
+            </div> */}
           </div>
         </Form>
       </Card>

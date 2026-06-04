@@ -63,7 +63,7 @@ const AppRoutes = () => {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/login-success" element={<OAuth2Redirect />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/register-landlord" element={<RegisterLandlord />} />
+            {/* <Route path="/register-landlord" element={<RegisterLandlord />} /> */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 

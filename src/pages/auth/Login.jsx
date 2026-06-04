@@ -126,7 +126,7 @@ const Login = () => {
               size="large"
               icon={<GoogleOutlined className="text-red-500" />}
               className="w-full flex items-center justify-center font-medium rounded-lg h-12"
-              onClick={() => window.location.href = 'http://localhost:8081/oauth2/authorization/google'}
+              onClick={() => window.location.href = '/oauth2/authorization/google'}
             >
               Đăng nhập bằng Google
             </Button>
@@ -135,7 +135,7 @@ const Login = () => {
               size="large"
               icon={<FacebookFilled className="text-blue-600" />}
               className="w-full flex items-center justify-center font-medium rounded-lg h-12"
-              onClick={() => window.location.href = 'http://localhost:8081/oauth2/authorization/facebook'}
+              onClick={() => window.location.href = '/oauth2/authorization/facebook'}
             >
               Đăng nhập bằng Facebook
             </Button>
@@ -147,7 +147,7 @@ const Login = () => {
 
             <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 transition-all hover:bg-orange-100/50">
               <Text type="secondary" className="text-xs block mb-1">Bạn là chủ bất động sản?</Text>
-              <Link to="/register-landlord" className="text-[#f96302] font-extrabold flex items-center justify-center gap-2 uppercase tracking-wide">
+              <Link to="/" className="text-[#f96302] font-extrabold flex items-center justify-center gap-2 uppercase tracking-wide">
                 Hợp tác cùng chúng tôi <HomeFilled />
               </Link>
             </div>
