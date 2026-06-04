@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, Row, Col, Divider } from 'antd';
-import { UserAddOutlined, LockOutlined, PhoneOutlined, MailOutlined, SmileOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { UserAddOutlined, LockOutlined, MailOutlined, SmileOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/authService';
 
@@ -13,23 +13,23 @@ const Register = () => {
 
   const onFinish = async (values) => {
     setLoading(true);
+
     try {
-      // Chuẩn bị dữ liệu gửi lên Backend
       const payload = {
-        fullName: values.fullName,
-        email: values.email,
-        password: values.password,
-        phone: values.phone,
-        role: 'USER' // Role cho Người thuê
+        fullName: values.fullName?.trim(),
+        email: values.email?.trim(),
+        password: values.password
       };
 
       await authService.register(payload);
 
-      message.success("Đăng ký thành công! Hãy đăng nhập để tìm phòng.");
+      message.success('Đăng ký thành công! Hãy đăng nhập để tìm phòng.');
       navigate('/login');
-
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Đăng ký thất bại (Email có thể đã tồn tại)";
+      const errorMsg =
+        error.response?.data?.message ||
+        'Đăng ký thất bại. Email có thể đã tồn tại.';
+
       message.error(errorMsg);
     } finally {
       setLoading(false);
@@ -37,67 +37,80 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 p-4">
       <Card
-        className="w-full max-w-lg shadow-2xl rounded-xl"
+        className="w-full max-w-md shadow-2xl rounded-2xl"
         bordered={false}
       >
         <div className="text-center mb-6">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserAddOutlined className="text-3xl text-blue-600" />
+          <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserAddOutlined className="text-3xl text-[#f96302]" />
           </div>
-          <Title level={3} style={{ margin: 0 }}>Đăng Ký Thành Viên</Title>
-          <Text type="secondary">Tìm phòng trọ ưng ý dễ dàng & nhanh chóng</Text>
+
+          <Title level={3} style={{ margin: 0 }}>
+            Đăng ký tài khoản
+          </Title>
+
+          <Text type="secondary">
+            Tạo tài khoản để tìm phòng và lưu tin yêu thích
+          </Text>
         </div>
 
         <Form
           form={form}
-          name="register_tenant"
+          name="register_user"
           layout="vertical"
           onFinish={onFinish}
           size="large"
+          autoComplete="off"
         >
           <Form.Item
+            label="Họ và tên"
             name="fullName"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập họ tên!' },
+              { min: 2, message: 'Họ tên phải có ít nhất 2 ký tự!' }
+            ]}
           >
-            <Input prefix={<SmileOutlined />} placeholder="Họ và tên của bạn" />
+            <Input
+              prefix={<SmileOutlined />}
+              placeholder="Nhập họ và tên"
+              allowClear
+            />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                rules={[
-                  { required: true, message: 'Nhập Email!' },
-                  { type: 'email', message: 'Email sai định dạng!' }
-                ]}
-              >
-                <Input prefix={<MailOutlined />} placeholder="Email" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="phone"
-                rules={[
-                  { required: true, message: 'Nhập SĐT!' },
-                  { pattern: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
-                ]}
-              >
-                <Input prefix={<PhoneOutlined />} placeholder="Số điện thoại" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Vui lòng nhập email!' },
+              { type: 'email', message: 'Email sai định dạng!' }
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="Nhập email"
+              allowClear
+            />
+          </Form.Item>
 
           <Form.Item
+            label="Mật khẩu"
             name="password"
-            rules={[{ required: true, message: 'Vui lòng tạo mật khẩu!' }]}
+            rules={[
+              { required: true, message: 'Vui lòng tạo mật khẩu!' },
+              { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' }
+            ]}
             hasFeedback
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập mật khẩu"
+            />
           </Form.Item>
 
           <Form.Item
+            label="Xác nhận mật khẩu"
             name="confirm"
             dependencies={['password']}
             hasFeedback
@@ -108,35 +121,34 @@ const Register = () => {
                   if (!value || getFieldValue('password') === value) {
                     return Promise.resolve();
                   }
+
                   return Promise.reject(new Error('Hai mật khẩu không khớp!'));
-                },
-              }),
+                }
+              })
             ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Xác nhận mật khẩu" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập lại mật khẩu"
+            />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item className="mb-3">
             <Button
               type="primary"
               htmlType="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 border-none h-12 font-bold text-lg rounded-lg"
+              className="w-full bg-[#f96302] hover:bg-[#d85502] border-none h-12 font-bold text-lg rounded-lg"
               loading={loading}
             >
               ĐĂNG KÝ
             </Button>
           </Form.Item>
 
-          <div className="text-center mt-2 flex flex-col gap-2">
-            <div>
-              <Text>Đã có tài khoản? </Text>
-              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
-                Đăng nhập ngay
-              </Link>
-            </div>
-
-            <Divider plain style={{ margin: '10px 0', fontSize: '12px' }}>Hoặc</Divider>
-
+          <div className="text-center">
+            <Text>Đã có tài khoản? </Text>
+            <Link to="/login" className="text-[#f96302] font-semibold hover:underline">
+              Đăng nhập ngay
+            </Link>
           </div>
         </Form>
       </Card>
