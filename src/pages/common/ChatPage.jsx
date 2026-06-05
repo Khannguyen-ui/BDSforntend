@@ -26,6 +26,9 @@ const { TextArea } = Input;
 
 const ChatPage = () => {
   const { user } = useAuth();
+
+  const currentUserId = user?.id || user?.userId || user?.sub;
+
   const navigate = useNavigate();
   const location = useLocation();
   const [form] = Form.useForm();
@@ -47,20 +50,20 @@ const ChatPage = () => {
   // --- REFS ---
   const messagesEndRef = useRef(null);
 
-  // 1. KẾT NỐI WEBSOCKET QUA CONTEXT
+
   useEffect(() => {
     if (lastMessage) {
       handleIncomingMessage(lastMessage);
     }
-  }, [lastMessage]);
+  }, [lastMessage, selectedPartner, currentUserId]);
 
   // 2. LOAD DỮ LIỆU
   useEffect(() => {
-    if (user && user.id) {
+    if (currentUserId) {
       fetchConversations();
       fetchRooms();
     }
-  }, [user]);
+  }, [currentUserId]);
 
   // 3. TỰ ĐỘNG MỞ CUỘC HỘI THOẠI NẾU ĐƯỢC ĐIỀU HƯỚNG TỪ TRANG CHI TIẾT PHÒNG HOẶC TỪ THÔNG BÁO
   useEffect(() => {
@@ -84,14 +87,14 @@ const ChatPage = () => {
 
   // 🟢 HÀM LẤY DANH SÁCH PHÒNG THẬT TỪ BACKEND
   const fetchRooms = async () => {
-    if (!user) return;
+    if (!currentUserId) return;
     try {
-      const res = await roomService.getMyRooms(user.id);
-      console.log('🏠 getMyRooms raw axios response:', res);
-      console.log('🏠 Dữ liệu phòng nhận được:', res.data);
+      const res = await roomService.getMyRooms(currentUserId);
+      console.log(' getMyRooms raw axios response:', res);
+      console.log(' Dữ liệu phòng nhận được:', res.data);
       setRooms(res.data || []);
     } catch (error) {
-      console.error('❌ Không thể tải danh sách phòng:', error?.response?.data || error.message);
+      console.error(' Không thể tải danh sách phòng:', error?.response?.data || error.message);
     }
   };
   useEffect(() => {
@@ -154,7 +157,7 @@ const ChatPage = () => {
     item.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- 
+
   const handleCreateAppointment = async (values) => {
     if (!selectedPartner) return;
     const targetId = selectedPartner.partnerId || selectedPartner.userId || selectedPartner.id;
@@ -176,7 +179,7 @@ const ChatPage = () => {
         const chatContent = `📅 **LỊCH HẸN HỆ THỐNG**\n📌 ${values.title}\n📍 Phòng: ${selectedRoom?.title}\n⏰ ${timeStr}\n📝 ${values.note || 'Không có ghi chú'}`;
 
         sendChatMessage({
-          senderId: user.id,
+          senderId: currentUserId,
           receiverId: targetId,
           content: chatContent,
           type: 'TEXT'
@@ -196,12 +199,29 @@ const ChatPage = () => {
 
   // --- LOGIC CHAT ---
   const handleIncomingMessage = (msg) => {
-    const targetId = selectedPartner?.partnerId || selectedPartner?.userId || selectedPartner?.id;
-    // So sánh kiểu chuỗi an toàn (backend trả về Long, STOMP payload có thể là number)
-    const samePartner = targetId && (String(msg.senderId) === String(targetId) || String(msg.receiverId) === String(targetId));
-    if (samePartner) {
-      setMessages(prev => [...prev, msg]);
+    const targetId =
+      selectedPartner?.partnerId ||
+      selectedPartner?.userId ||
+      selectedPartner?.id;
+
+    if (!targetId || !currentUserId) {
+      fetchConversations();
+      return;
     }
+
+    const isCurrentChat =
+      (String(msg.senderId) === String(currentUserId) &&
+        String(msg.receiverId) === String(targetId)) ||
+      (String(msg.senderId) === String(targetId) &&
+        String(msg.receiverId) === String(currentUserId));
+
+    if (isCurrentChat) {
+      setMessages((prev) => {
+        if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    }
+
     fetchConversations();
   };
 
@@ -213,8 +233,8 @@ const ChatPage = () => {
       message.loading({ content: 'Đang gửi ảnh...', key: 'upload_chat' });
       const imageUrl = await uploadService.uploadImage(file);
 
-      // Hiển thị tức thì (Optimistic)
-      const optimisticMsg = { senderId: user.id, receiverId: targetId, content: imageUrl, type: 'IMAGE', createdAt: new Date().toISOString() };
+
+      const optimisticMsg = { senderId: currentUserId, receiverId: targetId, content: imageUrl, type: 'IMAGE', createdAt: new Date().toISOString() };
       setMessages(prev => [...prev, optimisticMsg]);
 
       // Gửi qua HTTP REST để Backend lưu DB + broadcast WebSocket
@@ -231,14 +251,14 @@ const ChatPage = () => {
     setInputText(''); // Xóa ô nhập sớm để UX mượt
 
     // Hiển thị tức thì (Optimistic Update)
-    const optimisticMsg = { senderId: user.id, receiverId: targetId, content: textToSend, type: 'TEXT', createdAt: new Date().toISOString() };
+    const optimisticMsg = { senderId: currentUserId, receiverId: targetId, content: textToSend, type: 'TEXT', createdAt: new Date().toISOString() };
     setMessages(prev => [...prev, optimisticMsg]);
 
     try {
       // Gửi qua HTTP REST để Backend lưu DB + broadcast WebSocket cho bên kia
       await chatService.sendMessage(targetId, textToSend, 'TEXT');
     } catch (error) {
-      console.error('❌ Gửi tin nhắn thất bại:', error);
+      console.error('Gửi tin nhắn thất bại:', error);
       message.error('Không thể gửi tin nhắn. Vui lòng thử lại!');
       // Rollback tin nhắn nếu thất bại
       setMessages(prev => prev.filter(m => m !== optimisticMsg));
@@ -284,7 +304,7 @@ const ChatPage = () => {
             // Backend (HEAD): dùng field 'id' cho partnerId | (branch): dùng 'partnerId'
             const itemId = item.partnerId || item.userId || item.id;
             const targetId = selectedPartner?.partnerId || selectedPartner?.userId || selectedPartner?.id;
-            const isActive = targetId && targetId === itemId;
+            const isActive = targetId && String(targetId) === String(itemId);
             const unread = item.unreadCount || 0;
             return (
               <div
@@ -334,7 +354,7 @@ const ChatPage = () => {
               {loadingHistory ? <div className="text-center mt-4"><Spin /></div> :
                 messages.length === 0 ? <Empty description="Bắt đầu trò chuyện ngay!" className="mt-10" /> :
                   messages.map((msg, index) => {
-                    const isMe = String(msg.senderId) === String(user.id);
+                    const isMe = currentUserId && String(msg.senderId) === String(currentUserId);
                     const isImage = msg.type === 'IMAGE';
                     const isCard = msg.type === 'PROPERTY_CARD';
 
