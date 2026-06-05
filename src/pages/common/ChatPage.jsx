@@ -29,6 +29,11 @@ const ChatPage = () => {
 
   const currentUserId = user?.id || user?.userId || user?.sub;
 
+  const getPartnerId = (item) => {
+    if (!item) return null;
+    return item.partnerId;
+  };
+
   const navigate = useNavigate();
   const location = useLocation();
   const [form] = Form.useForm();
@@ -99,15 +104,15 @@ const ChatPage = () => {
   };
   useEffect(() => {
     if (selectedPartner) {
-      const targetId = selectedPartner.partnerId || selectedPartner.userId || selectedPartner.id;
+      const targetId = getPartnerId(selectedPartner);
       if (!targetId) return;
+
       setLoadingHistory(true);
       chatService.getChatHistory(targetId)
         .then(res => setMessages(res.data || res || []))
         .catch(err => console.error(err))
         .finally(() => setLoadingHistory(false));
 
-      // 🟢 Đánh dấu đã đọc khi mở hội thoại
       chatService.markAsRead(targetId)
         .then(() => fetchConversations())
         .catch(err => console.error("Lỗi đánh dấu đã đọc:", err));
@@ -126,22 +131,28 @@ const ChatPage = () => {
       // Enrich: tự gọi customer-service để lấy tên thật thay vì phụ thuộc Feign ở backend
       const enriched = await Promise.all(
         rawList.map(async (conv) => {
-          const partnerId = conv.partnerId || conv.id;
-          // Chỉ gọi API nếu tên vẫn là dạng fallback "User X" hoặc avatar rỗng
-          const needsEnrich = !conv.fullName || conv.fullName === `User ${partnerId}` || !conv.avatar;
+          const partnerId = getPartnerId(conv);
+
+          const needsEnrich =
+            !conv.fullName ||
+            conv.fullName === `User ${partnerId}` ||
+            !conv.avatar;
+
           if (needsEnrich && partnerId) {
             try {
               const summaryRes = await axiosClient.get(`/customers/${partnerId}/summary`);
               const summary = summaryRes.data?.result || summaryRes.data;
+
               return {
                 ...conv,
                 fullName: summary?.fullName || conv.fullName,
                 avatar: summary?.avatarUrl || conv.avatar,
               };
             } catch {
-              return conv; // Giữ nguyên nếu lỗi
+              return conv;
             }
           }
+
           return conv;
         })
       );
@@ -160,7 +171,7 @@ const ChatPage = () => {
 
   const handleCreateAppointment = async (values) => {
     if (!selectedPartner) return;
-    const targetId = selectedPartner.partnerId || selectedPartner.userId || selectedPartner.id;
+    const targetId = getPartnerId(selectedPartner);
     if (!targetId) return;
     setSubmittingAppointment(true);
     try {
@@ -199,10 +210,7 @@ const ChatPage = () => {
 
   // --- LOGIC CHAT ---
   const handleIncomingMessage = (msg) => {
-    const targetId =
-      selectedPartner?.partnerId ||
-      selectedPartner?.userId ||
-      selectedPartner?.id;
+    const targetId = getPartnerId(selectedPartner);
 
     if (!targetId || !currentUserId) {
       fetchConversations();
@@ -213,7 +221,9 @@ const ChatPage = () => {
       (String(msg.senderId) === String(currentUserId) &&
         String(msg.receiverId) === String(targetId)) ||
       (String(msg.senderId) === String(targetId) &&
-        String(msg.receiverId) === String(currentUserId));
+        String(msg.receiverId) === String(currentUserId)) ||
+      // fallback cho message cũ thiếu receiverId
+      (!msg.receiverId && String(msg.senderId) === String(targetId));
 
     if (isCurrentChat) {
       setMessages((prev) => {
@@ -227,7 +237,7 @@ const ChatPage = () => {
 
   const handleImageUpload = async (info) => {
     const file = info.file;
-    const targetId = selectedPartner?.partnerId || selectedPartner?.userId || selectedPartner?.id;
+    const targetId = getPartnerId(selectedPartner);
     if (!targetId) return;
     try {
       message.loading({ content: 'Đang gửi ảnh...', key: 'upload_chat' });
@@ -244,7 +254,7 @@ const ChatPage = () => {
   };
 
   const handleSend = async () => {
-    const targetId = selectedPartner?.partnerId || selectedPartner?.userId || selectedPartner?.id;
+    const targetId = getPartnerId(selectedPartner);
     if (!inputText.trim() || !targetId) return;
 
     const textToSend = inputText;
@@ -301,9 +311,9 @@ const ChatPage = () => {
               Chưa có cuộc trò chuyện nào
             </div>
           ) : filteredConversations.map((item, idx) => {
-            // Backend (HEAD): dùng field 'id' cho partnerId | (branch): dùng 'partnerId'
-            const itemId = item.partnerId || item.userId || item.id;
-            const targetId = selectedPartner?.partnerId || selectedPartner?.userId || selectedPartner?.id;
+
+            const itemId = getPartnerId(item);
+            const targetId = getPartnerId(selectedPartner);
             const isActive = targetId && String(targetId) === String(itemId);
             const unread = item.unreadCount || 0;
             return (
