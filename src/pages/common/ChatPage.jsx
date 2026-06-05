@@ -154,8 +154,7 @@ const ChatPage = () => {
     item.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 🟢 XỬ LÝ TẠO LỊCH HẸN (GỌI SERVICE THẬT)
-  // 🟢 Cập nhật hàm handleCreateAppointment trong ChatPage.jsx
+ 
   const handleCreateAppointment = async (values) => {
     if (!selectedPartner) return;
     const targetId = selectedPartner.partnerId || selectedPartner.userId || selectedPartner.id;
@@ -163,10 +162,9 @@ const ChatPage = () => {
     setSubmittingAppointment(true);
     try {
       const appointmentData = {
-        roomId: values.roomId,
-        tenantId: targetId, // 👈 THÊM DÒNG NÀY: Gửi ID của người đang chat
-        meetTime: values.dateTime[0].format('YYYY-MM-DDTHH:mm:ss'),
-        message: values.note || "Lịch hẹn được tạo bởi chủ trọ"
+        propertyId: values.roomId,
+        appointmentTime: values.dateTime[0].format('YYYY-MM-DDTHH:mm:ss'),
+        note: values.note || "Khách muốn hẹn xem phòng"
       };
 
       const res = await appointmentService.create(appointmentData);

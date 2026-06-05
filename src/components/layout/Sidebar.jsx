@@ -101,7 +101,7 @@ const Sidebar = () => {
         label: 'Tài khoản & thông báo',
         children: [
           { key: '/profile', icon: <UserOutlined />, label: 'Cài đặt tài khoản' },
-          { key: '/change-password', icon: <LockOutlined />, label: 'Đổi mật khẩu' },
+          
         ],
       },
       {
