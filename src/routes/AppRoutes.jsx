@@ -88,6 +88,7 @@ const AppRoutes = () => {
                 <Route element={<MainLayout />}>
                     {/* Common cho tất cả user đã login */}
                     <Route path="/profile" element={<UserProfile />} />
+                    <Route path="/tenant/appointments" element={<AppointmentManagement />} />
                     <Route path="/favorites" element={<MyFavorites />} />
                     <Route path="/kyc" element={<KycVerification />} />
                     <Route path="/notifications" element={<NotificationPage />} />
