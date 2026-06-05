@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Layout, Avatar, Input, Button, Spin, Typography, Empty, Badge, message, Tooltip, Tag,
+  Layout, Avatar, Input, Button, Spin, Typography, Empty, message, Tooltip,
   Upload, Image, Dropdown, Modal, DatePicker, Form, Select
 } from 'antd';
 import {
@@ -27,7 +27,37 @@ const { TextArea } = Input;
 const ChatPage = () => {
   const { user } = useAuth();
 
-  const currentUserId = user?.id || user?.userId || user?.sub;
+  const getAccessTokenFromStorage = () => {
+    const sessionKey = Object.keys(sessionStorage).find(
+      key => key.endsWith('_accessToken') || key === 'accessToken'
+    );
+
+    if (sessionKey) {
+      return sessionStorage.getItem(sessionKey);
+    }
+
+    return localStorage.getItem('accessToken');
+  };
+
+  const getUserIdFromToken = () => {
+    try {
+      const token = getAccessTokenFromStorage();
+      if (!token) return null;
+
+      const payloadBase64 = token.split('.')[1];
+      if (!payloadBase64) return null;
+
+      const payload = JSON.parse(atob(payloadBase64));
+
+      return payload.userId || payload.id || null;
+    } catch (error) {
+      console.warn('Không đọc được userId từ JWT:', error);
+      return null;
+    }
+  };
+
+  const tokenUserId = getUserIdFromToken();
+  const currentUserId = tokenUserId || user?.userId || user?.id || user?.sub;
 
   const getPartnerId = (item) => {
     if (!item) return null;
