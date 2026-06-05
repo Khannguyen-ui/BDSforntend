@@ -128,7 +128,8 @@ const ChatPage = () => {
       const res = await chatService.getConversations();
       const rawList = res.data || [];
 
-      // Enrich: tự gọi customer-service để lấy tên thật thay vì phụ thuộc Feign ở backend
+      console.log("CHAT_CONVERSATIONS_RAW", rawList);
+      console.log("CHAT_CURRENT_USER", user, currentUserId);
       const enriched = await Promise.all(
         rawList.map(async (conv) => {
           const partnerId = getPartnerId(conv);
@@ -367,6 +368,13 @@ const ChatPage = () => {
                     const isMe = currentUserId && String(msg.senderId) === String(currentUserId);
                     const isImage = msg.type === 'IMAGE';
                     const isCard = msg.type === 'PROPERTY_CARD';
+                    console.log("CHAT_RENDER_DEBUG", {
+                      currentUserId,
+                      senderId: msg.senderId,
+                      receiverId: msg.receiverId,
+                      isMe,
+                      content: msg.content
+                    });
 
                     // --- Render Property Card ---
                     if (isCard) {
