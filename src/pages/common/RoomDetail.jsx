@@ -107,8 +107,7 @@ const RoomDetail = () => {
     const [loadingVideoRooms, setLoadingVideoRooms] = useState(false);
     // --- STATE CHO BOOKING ---
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [bookingLoading, setBookingLoading] = useState(false);
-    const [form] = Form.useForm();
+
     const [recommendedRooms, setRecommendedRooms] = useState([]);
     const [loadingRecs, setLoadingRecs] = useState(false);
     //dữ liệu biểu đồ
@@ -445,7 +444,7 @@ const RoomDetail = () => {
                         transactionType: activeRoom.transactionType || 'RENT'
                     };
                     const res = await roomService.getPriceTrends(params);
-                    
+
                     const rawDataRaw = res.data?.history || res.data?.trendData || res.data;
                     rawData = Array.isArray(rawDataRaw) ? rawDataRaw : [];
                 } catch (apiErr) {
@@ -459,7 +458,7 @@ const RoomDetail = () => {
                 for (let i = 5; i >= 0; i--) {
                     const monthObj = now.subtract(i, 'month');
                     const label = `T${monthObj.month() + 1}/${monthObj.format('YY')}`;
-                    
+
                     // Tạo xu hướng tăng trưởng biến động nhẹ 1-2% mỗi tháng
                     const factor = 1 - (i * 0.015);
                     const basePrice = roomPriceTr > 0 ? roomPriceTr : 2.5; // mặc định 2.5tr nếu phòng ko có giá
@@ -485,7 +484,7 @@ const RoomDetail = () => {
             // 4. Định dạng dữ liệu biểu đồ
             const formatted = rawData.map(item => {
                 const label = item.name || `T${item.month}/${String(item.year).slice(-2)}`;
-                
+
                 // Hỗ trợ cả dữ liệu thô chia 1,000,000 nếu dữ liệu là số nguyên lớn (VND)
                 const rawPopular = item.popular || item.avgPrice || 0;
                 const rawHighest = item.highest || item.maxPrice || 0;
@@ -614,7 +613,7 @@ const RoomDetail = () => {
                     const vKey = `property_views_${id}`;
                     const currentViews = parseInt(localStorage.getItem(vKey) || '0', 10);
                     localStorage.setItem(vKey, String(currentViews + 1));
-                } catch (_) {}
+                } catch (_) { }
                 // Gọi API nếu Backend hỗ trợ
                 // roomService.trackView(id);
                 recommendService.trackBehavior(id, 'PROPERTY', 'VIEW').catch(e => console.warn('Track view failed:', e));
@@ -719,23 +718,8 @@ const RoomDetail = () => {
         }
     };
 
-    // --- XỬ LÝ ĐẶT LỊCH ---
-    const handleBooking = async (values) => {
-        if (!user) {
-            message.warning("Vui lòng đăng nhập để đặt lịch!");
-            navigate('/login');
-            return;
-        }
-        setBookingLoading(true);
-        try {
-            // Logic xử lý đặt lịch xem phòng sẽ được tích hợp với Backend tại đây
-            message.info("Tính năng đặt lịch đang được cập nhật...");
-            setIsModalOpen(false);
-        } catch (error) {
-            message.error("Có lỗi xảy ra, vui lòng thử lại");
-            setBookingLoading(false);
-        }
-    };
+    const isOwnRoom = user && room && String(user.id) === String(room.ownerId);
+
 
     if (loading) return <div className="flex flex-col h-screen justify-center items-center gap-2"><Spin size="large" /><div className="text-gray-500">Đang tải thông tin...</div></div>;
     if (!room) return (
@@ -1088,7 +1072,7 @@ const RoomDetail = () => {
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
-                                : <div className="flex items-center justify-center h-full text-gray-400 text-sm">⏳ Đang tải dữ liệu biểu đồ...</div>}
+                                    : <div className="flex items-center justify-center h-full text-gray-400 text-sm">⏳ Đang tải dữ liệu biểu đồ...</div>}
                             </div>
 
                             {/* Disclaimer Footer */}
@@ -1243,11 +1227,25 @@ const RoomDetail = () => {
                                     type="primary"
                                     size="large"
                                     block
+                                    disabled={isOwnRoom}
                                     className="bg-orange-600 hover:bg-orange-500 font-bold h-12 mb-3"
                                     icon={<CalendarOutlined />}
-                                    onClick={() => setIsModalOpen(true)}
+                                    onClick={() => {
+                                        if (!user) {
+                                            message.warning("Vui lòng đăng nhập để đặt lịch!");
+                                            navigate('/login');
+                                            return;
+                                        }
+
+                                        if (isOwnRoom) {
+                                            message.warning("Bạn không thể đặt lịch xem bài đăng của chính mình.");
+                                            return;
+                                        }
+
+                                        setIsModalOpen(true);
+                                    }}
                                 >
-                                    ĐẶT LỊCH XEM PHÒNG
+                                    {isOwnRoom ? "BÀI ĐĂNG CỦA BẠN" : "ĐẶT LỊCH XEM PHÒNG"}
                                 </Button>
                                 <div className="text-center text-xs text-gray-400">
                                     Hoàn toàn miễn phí & Gặp trực tiếp chủ trọ
@@ -1268,7 +1266,7 @@ const RoomDetail = () => {
                                         }}
                                     />
                                     <div className="min-w-0 flex-grow">
-                                        <div 
+                                        <div
                                             className="font-bold text-gray-900 text-[16px] flex items-center flex-wrap gap-1.5 cursor-pointer hover:text-orange-500 transition-colors"
                                             onClick={() => {
                                                 const targetSlug = room.landlordSlug || room.ownerSlugSnapshot || room.ownerId;
@@ -1684,14 +1682,31 @@ const RoomDetail = () => {
                 </div>
                 <Button
                     type="primary"
-                    className="bg-orange-600 border-none font-bold px-6 h-10 shadow-md"
-                    onClick={() => setIsModalOpen(true)}
+                    size="large"
+                    block
+                    disabled={isOwnRoom}
+                    className="bg-orange-600 hover:bg-orange-500 font-bold h-12 mb-3"
+                    icon={<CalendarOutlined />}
+                    onClick={() => {
+                        if (!user) {
+                            message.warning("Vui lòng đăng nhập để đặt lịch!");
+                            navigate('/login');
+                            return;
+                        }
+
+                        if (isOwnRoom) {
+                            message.warning("Bạn không thể đặt lịch xem bài đăng của chính mình.");
+                            return;
+                        }
+
+                        setIsModalOpen(true);
+                    }}
                 >
-                    ĐẶT LỊCH NGAY
+                    {isOwnRoom ? "BÀI ĐĂNG CỦA BẠN" : "ĐẶT LỊCH XEM PHÒNG"}
                 </Button>
             </div>
 
-            {/* --- MODAL ĐẶT LỊCH CHUẨN --- */}
+           
             <BookingModal
                 visible={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
