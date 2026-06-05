@@ -209,7 +209,7 @@ const PublicLayout = () => {
           <div className="flex items-center gap-8">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 text-[#f96302] font-bold text-2xl hover:text-orange-600">
-              <HomeOutlined /> SMART RENTAL
+              <HomeOutlined /> Homevers
             </Link>
 
             {/* Navigation Links */}

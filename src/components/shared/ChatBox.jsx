@@ -99,13 +99,13 @@ export default function ChatBox() {
       try {
         const parsed = JSON.parse(saved);
         return parsed.length > 0 ? parsed : [
-          { role: "ai", text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }
+          { role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }
         ];
       } catch {
-        return [{ role: "ai", text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
+        return [{ role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
       }
     }
-    return [{ role: "ai", text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
+    return [{ role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
   });
 
   const [showQuickReplies, setShowQuickReplies] = useState(() => {
@@ -119,7 +119,7 @@ export default function ChatBox() {
     return true;
   });
 
-  // ✅ LƯU vào localStorage mỗi khi messages thay đổi
+ 
   useEffect(() => {
     localStorage.setItem("chat-messages", JSON.stringify(messages));
   }, [messages]);
