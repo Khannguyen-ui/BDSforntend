@@ -409,16 +409,23 @@ const RoomDetail = () => {
             const res = await roomService.getVideoRooms({ size: 12 });
             const allVideoRooms = res.data?.content || res.data?.items || res.data || [];
 
+            const normalizeText = (value) =>
+                (value || '').toString().trim().toLowerCase();
+
             const filteredAndSorted = allVideoRooms
                 .filter(r => r.id?.toString() !== id?.toString())
                 .filter(r => {
                     if (!currentRoomData) return true;
 
-                    return (
-                        r.district === currentRoomData.district ||
-                        r.province === currentRoomData.province ||
-                        r.propertyType === currentRoomData.propertyType
-                    );
+                    const sameDistrict =
+                        normalizeText(r.district) &&
+                        normalizeText(r.district) === normalizeText(currentRoomData.district);
+
+                    const sameProvince =
+                        normalizeText(r.province) &&
+                        normalizeText(r.province) === normalizeText(currentRoomData.province);
+
+                    return sameDistrict || sameProvince;
                 })
                 .sort((a, b) => (b.priorityLevel || 0) - (a.priorityLevel || 0))
                 .slice(0, 4);
