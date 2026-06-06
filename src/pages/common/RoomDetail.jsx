@@ -25,6 +25,14 @@ import {
     DownOutlined,
     UpOutlined
 } from '@ant-design/icons';
+import {
+    FURNISHING_STATUS_LABELS,
+    AVAILABILITY_STATUS_LABELS,
+    UTILITY_PRICE_TYPE_LABELS,
+    LEGAL_DOCUMENT_TYPE_LABELS,
+    formatEnumLabel,
+    formatBooleanLabel,
+} from '../../constants/propertyEnums';
 import { Upload } from 'antd';
 import '../../App.css';
 
@@ -117,7 +125,19 @@ const RoomDetail = () => {
 
     const [nearbyStats, setNearbyStats] = useState({ avgPrice: 0, diffPercentage: 0, totalNearby: 0 });
 
-    // 1. Hàm lấy các phòng trong khu vực dựa trên tọa độ của phòng đang xem
+    const formatPriceByTransaction = (price, transactionType) => {
+        if (!price) return 'Thỏa thuận';
+
+        const formatted = price.toLocaleString('vi-VN');
+
+        if (transactionType === 'FOR_SALE') {
+            return `${formatted} đ`;
+        }
+
+        return `${formatted} đ/tháng`;
+    };
+    const currentUserId = user?.userId || user?.identityId || user?.id;
+    const isOwnRoom = user && room && String(currentUserId) === String(room.ownerId);
 
     const [cheaperRooms, setCheaperRooms] = useState([]);
     const [loadingComparison, setLoadingComparison] = useState(false);
@@ -220,7 +240,7 @@ const RoomDetail = () => {
     // 2. Hàm xử lý bấm Tim (Like tin)
     const handleToggleFavorite = async () => {
         // NGĂN LỖI 500 TỪ BACKEND: Chủ bài không được phép like/save bài của chính mình.
-        if (room && user && String(user.id) === String(room.ownerId)) {
+        if (isOwnRoom) {
             message.info("Đây là bài đăng của bạn — không thể thích bài của chính mình!");
             return;
         }
@@ -268,8 +288,8 @@ const RoomDetail = () => {
     const [saveCount, setSaveCount] = useState(0);
 
     const handleToggleSave = async () => {
-        // NGĂN LỖI 500 TỪ BACKEND: Chủ bài không được phép like/save bài của chính mình.
-        if (room && user && String(user.id) === String(room.ownerId)) {
+
+        if (isOwnRoom) {
             message.info("Đây là bài đăng của bạn — không thể lưu bài của chính mình!");
             return;
         }
@@ -441,7 +461,7 @@ const RoomDetail = () => {
                         district: activeRoom.district,
                         ward: activeRoom.ward,
                         propertyType: activeRoom.propertyType,
-                        transactionType: activeRoom.transactionType || 'RENT'
+                        transactionType: activeRoom.transactionType || 'FOR_RENT'
                     };
                     const res = await roomService.getPriceTrends(params);
 
@@ -674,12 +694,11 @@ const RoomDetail = () => {
             return;
         }
 
-        // Không cho phép tự chat với chính mình
-        if (String(user.id) === String(room.ownerId)) {
+
+        if (isOwnRoom) {
             message.info("Đây là bài đăng của bạn.");
             return;
         }
-
         try {
             message.loading({ content: "Đang kết nối...", key: 'chat_loading' });
 
@@ -718,7 +737,7 @@ const RoomDetail = () => {
         }
     };
 
-    const isOwnRoom = user && room && String(user.id) === String(room.ownerId);
+
 
 
     if (loading) return <div className="flex flex-col h-screen justify-center items-center gap-2"><Spin size="large" /><div className="text-gray-500">Đang tải thông tin...</div></div>;
@@ -831,12 +850,14 @@ const RoomDetail = () => {
                                     Dự án: {room.projectNameSnapshot}
                                 </div>
                             )}
-                            <div className="text-sm text-gray-500 mb-4">{room.furnishingStatus || "Đang cập nhật"}</div>
+                            <div className="text-sm text-gray-500 mb-4">
+                                {formatEnumLabel(FURNISHING_STATUS_LABELS, room.furnishingStatus)}
+                            </div>
 
                             <div className="flex justify-between items-center mb-4">
                                 <div className="flex items-baseline gap-4">
                                     <span className="text-red-600 font-bold text-2xl">
-                                        {room.price?.toLocaleString()} đ/tháng
+                                        {formatPriceByTransaction(room.price, room.transactionType)}
                                     </span>
                                     <span className="text-gray-600 text-sm font-medium">{room.area} m²</span>
                                 </div>
@@ -894,16 +915,17 @@ const RoomDetail = () => {
                         {/* Đặc điểm chi tiết căn hộ/phòng */}
                         <Card className="shadow-sm border-none mb-4 rounded-lg">
                             <h3 className="font-bold text-lg mb-4 border-b pb-2">Đặc điểm chi tiết</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
 
-                                {/* Cột 1 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
                                         <div className="flex items-center text-gray-500">
                                             <ColumnWidthOutlined className="text-lg mr-3 text-orange-500" />
                                             <span className="text-sm">Diện tích</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.area} m²</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {room.area ? `${room.area} m²` : 'Chưa cập nhật'}
+                                        </span>
                                     </div>
 
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
@@ -911,7 +933,9 @@ const RoomDetail = () => {
                                             <HomeFilled className="text-lg mr-3 text-orange-500" />
                                             <span className="text-sm">Số phòng ngủ</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.bedrooms || 0} phòng</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {room.bedrooms !== null && room.bedrooms !== undefined ? `${room.bedrooms} phòng` : 'Chưa cập nhật'}
+                                        </span>
                                     </div>
 
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
@@ -919,28 +943,33 @@ const RoomDetail = () => {
                                             <CheckCircleOutlined className="text-lg mr-3 text-orange-500" />
                                             <span className="text-sm">Nhà vệ sinh</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.bathrooms || 0} phòng</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {room.bathrooms !== null && room.bathrooms !== undefined ? `${room.bathrooms} phòng` : 'Chưa cập nhật'}
+                                        </span>
                                     </div>
 
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
                                         <div className="flex items-center text-gray-500">
                                             <AppstoreAddOutlined className="text-lg mr-3 text-orange-500" />
-                                            <span className="text-sm">Tầng số</span>
+                                            <span className="text-sm">Ban công</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.floorNumber ? `Tầng ${room.floorNumber}` : "Tầng trệt"}</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatBooleanLabel(room.hasBalcony)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                                        <div className="flex items-center text-gray-500">
+                                            <UserOutlined className="text-lg mr-3 text-orange-500" />
+                                            <span className="text-sm">Sức chứa</span>
+                                        </div>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {room.capacity ? `${room.capacity} người` : 'Chưa cập nhật'}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Cột 2 */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                                        <div className="flex items-center text-gray-500">
-                                            <DollarOutlined className="text-lg mr-3 text-orange-500" />
-                                            <span className="text-sm">Tiền cọc</span>
-                                        </div>
-                                        <span className="text-red-600 font-semibold text-sm">{room.deposit ? `${room.deposit.toLocaleString()} đ` : "Thỏa thuận"}</span>
-                                    </div>
-
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
                                         <div className="flex items-center text-gray-500">
                                             <Tooltip title="Tình trạng pháp lý của bất động sản">
@@ -948,15 +977,9 @@ const RoomDetail = () => {
                                             </Tooltip>
                                             <span className="text-sm">Pháp lý</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.legalDocumentType || "Đang cập nhật"}</span>
-                                    </div>
-
-                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                                        <div className="flex items-center text-gray-500">
-                                            <AimOutlined className="text-lg mr-3 text-orange-500" />
-                                            <span className="text-sm">Hướng nhà</span>
-                                        </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.direction || "Không xác định"}</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(LEGAL_DOCUMENT_TYPE_LABELS, room.legalDocumentType)}
+                                        </span>
                                     </div>
 
                                     <div className="flex items-center justify-between border-b border-gray-50 pb-2">
@@ -966,10 +989,51 @@ const RoomDetail = () => {
                                             </Tooltip>
                                             <span className="text-sm">Nội thất</span>
                                         </div>
-                                        <span className="text-gray-800 font-semibold text-sm">{room.furnishingStatus || "Cơ bản"}</span>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(FURNISHING_STATUS_LABELS, room.furnishingStatus)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                                        <div className="flex items-center text-gray-500">
+                                            <ClockCircleOutlined className="text-lg mr-3 text-orange-500" />
+                                            <span className="text-sm">Thời gian vào ở</span>
+                                        </div>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(AVAILABILITY_STATUS_LABELS, room.availabilityStatus)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                                        <div className="flex items-center text-gray-500">
+                                            <DollarOutlined className="text-lg mr-3 text-orange-500" />
+                                            <span className="text-sm">Giá điện</span>
+                                        </div>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(UTILITY_PRICE_TYPE_LABELS, room.electricityPrice)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                                        <div className="flex items-center text-gray-500">
+                                            <DollarOutlined className="text-lg mr-3 text-orange-500" />
+                                            <span className="text-sm">Giá nước</span>
+                                        </div>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(UTILITY_PRICE_TYPE_LABELS, room.waterPrice)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                                        <div className="flex items-center text-gray-500">
+                                            <DollarOutlined className="text-lg mr-3 text-orange-500" />
+                                            <span className="text-sm">Internet</span>
+                                        </div>
+                                        <span className="text-gray-800 font-semibold text-sm">
+                                            {formatEnumLabel(UTILITY_PRICE_TYPE_LABELS, room.internetPrice)}
+                                        </span>
                                     </div>
                                 </div>
-
                             </div>
                         </Card>
 
@@ -1220,8 +1284,12 @@ const RoomDetail = () => {
                         <div className="sticky top-4 space-y-4">
                             <Card className="hidden lg:block shadow-md border-t-4 border-t-orange-500 rounded-lg">
                                 <div className="text-center mb-4">
-                                    <div className="text-gray-500 text-xs">Giá thuê phòng</div>
-                                    <div className="text-red-600 font-bold text-2xl">{room.price?.toLocaleString()} đ/tháng</div>
+                                    <div className="text-gray-500 text-xs">
+                                        {room.transactionType === 'FOR_SALE' ? 'Giá bán' : 'Giá thuê phòng'}
+                                    </div>
+                                    <div className="text-red-600 font-bold text-2xl">
+                                        {formatPriceByTransaction(room.price, room.transactionType)}
+                                    </div>
                                 </div>
                                 <Button
                                     type="primary"
@@ -1706,7 +1774,7 @@ const RoomDetail = () => {
                 </Button>
             </div>
 
-           
+
             <BookingModal
                 visible={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
