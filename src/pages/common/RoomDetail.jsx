@@ -402,7 +402,34 @@ const RoomDetail = () => {
             setLoadingRecs(false);
         }
     };
-    // List Post video
+    const normalizeText = (value) =>
+        (value || '')
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, ' ');
+
+    const extractLocationFromAddress = (address = '') => {
+        const parts = address
+            .split(',')
+            .map(p => p.trim())
+            .filter(Boolean);
+
+        const province = parts.find(p =>
+            /^(tỉnh|thành phố|tp\.?|tp)\s+/i.test(p)
+        ) || '';
+
+        const district = parts.find(p =>
+            /^(quận|huyện|thành phố|thị xã|tp\.?|tx\.?)\s+/i.test(p)
+        ) || '';
+
+        const ward = parts.find(p =>
+            /^(phường|xã|thị trấn)\s+/i.test(p)
+        ) || '';
+
+        return { province, district, ward };
+    };
+
     const fetchVideoRooms = async (currentRoomData) => {
         setLoadingVideoRooms(true);
         try {
@@ -417,19 +444,31 @@ const RoomDetail = () => {
                 .filter(r => {
                     if (!currentRoomData) return true;
 
+                    const reelLocation = extractLocationFromAddress(r.address);
+
+                    const reelProvince = r.province || reelLocation.province;
+                    const reelDistrict = r.district || reelLocation.district;
+
+                    const currentProvince =
+                        currentRoomData.province ||
+                        extractLocationFromAddress(currentRoomData.address).province;
+
+                    const currentDistrict =
+                        currentRoomData.district ||
+                        extractLocationFromAddress(currentRoomData.address).district;
+
                     const sameDistrict =
-                        normalizeText(r.district) &&
-                        normalizeText(r.district) === normalizeText(currentRoomData.district);
+                        normalizeText(reelDistrict) &&
+                        normalizeText(reelDistrict) === normalizeText(currentDistrict);
 
                     const sameProvince =
-                        normalizeText(r.province) &&
-                        normalizeText(r.province) === normalizeText(currentRoomData.province);
+                        normalizeText(reelProvince) &&
+                        normalizeText(reelProvince) === normalizeText(currentProvince);
 
                     return sameDistrict || sameProvince;
                 })
                 .sort((a, b) => (b.priorityLevel || 0) - (a.priorityLevel || 0))
                 .slice(0, 4);
-
             const enrichedRooms = await Promise.all(
                 filteredAndSorted.map(async (item) => {
                     try {
