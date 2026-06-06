@@ -147,47 +147,188 @@ const RoomDetail = () => {
     const handleUploadChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
     };
+    const CORE_COMPARE_FIELDS = ['propertyType', 'transactionType'];
+
+    const OPTIONAL_COMPARE_FIELDS = [
+        'bedrooms',
+        'bathrooms',
+        'capacity',
+        'hasBalcony',
+        'furnishingStatus',
+        'availabilityStatus',
+        'legalDocumentType',
+        'electricityPrice',
+        'waterPrice',
+        'internetPrice',
+    ];
 
 
+    const normalizeValue = (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        return String(value).trim().toUpperCase();
+    };
+
+    const isSameCoreType = (candidate, currentRoom) => {
+        return CORE_COMPARE_FIELDS.every((field) => {
+            const currentValue = normalizeValue(currentRoom?.[field]);
+            const candidateValue = normalizeValue(candidate?.[field]);
+
+            if (!currentValue) return true;
+
+            return candidateValue === currentValue;
+        });
+    };
+
+    const getSimilarityScore = (candidate, currentRoom) => {
+        let total = 0;
+        let matched = 0;
+
+        OPTIONAL_COMPARE_FIELDS.forEach((field) => {
+            const currentValue = normalizeValue(currentRoom?.[field]);
+            const candidateValue = normalizeValue(candidate?.[field]);
+
+            if (!currentValue || !candidateValue) return;
+
+            total += 1;
+
+            if (currentValue === candidateValue) {
+                matched += 1;
+            }
+        });
+
+        return total > 0 ? matched / total : 0;
+    };
+    const isSameDistrict = (candidate, currentRoom) => {
+        return (
+            normalizeText(candidate?.district) &&
+            normalizeText(candidate?.district) === normalizeText(currentRoom?.district)
+        );
+    };
+
+    const isSameProvince = (candidate, currentRoom) => {
+        return (
+            normalizeText(candidate?.province) &&
+            normalizeText(candidate?.province) === normalizeText(currentRoom?.province)
+        );
+    };
+    const fetchRoomsBySmartRadius = async (currentRoom) => {
+        const steps = [
+            { radius: 3000, areaLevel: 'district' },
+            { radius: 5000, areaLevel: 'district' },
+            { radius: 10000, areaLevel: 'province' },
+        ];
+
+        for (const step of steps) {
+            const res = await roomService.searchRooms({
+                lat: Number(currentRoom.latitude),
+                lng: Number(currentRoom.longitude),
+                radius: step.radius,
+                size: 50,
+                propertyType: currentRoom.propertyType,
+                transactionType: currentRoom.transactionType,
+            });
+
+            const rawData =
+                res.data?.result?.content ||
+                res.data?.content ||
+                res.data?.items ||
+                res.data ||
+                [];
+
+            const rooms = Array.isArray(rawData) ? rawData : [];
+
+            const validRooms = rooms
+                .filter(r => r.id?.toString() !== id?.toString())
+                .filter(r => Number(r.price) > 0)
+                .filter(r => isSameCoreType(r, currentRoom))
+                .filter(r => {
+                    if (step.areaLevel === 'district') {
+                        return isSameDistrict(r, currentRoom);
+                    }
+
+                    return isSameProvince(r, currentRoom);
+                })
+                .map(r => ({
+                    ...r,
+                    similarityScore: getSimilarityScore(r, currentRoom),
+                }));
+
+            if (validRooms.length >= 3 || step.radius === 10000) {
+                return {
+                    rooms: validRooms,
+                    radius: step.radius,
+                    areaLevel: step.areaLevel,
+                };
+            }
+        }
+
+        return { rooms: [], radius: 10000, areaLevel: 'province' };
+    };
     const fetchNearbyComparison = async (currentRoom) => {
+        if (!currentRoom?.latitude || !currentRoom?.longitude) {
+            setCheaperRooms([]);
+            setNearbyStats({
+                avgPrice: 0,
+                diffPercentage: 0,
+                totalNearby: 0,
+                radius: 0,
+                areaLevel: null,
+            });
+            setHasSearched(true);
+            return;
+        }
+
         setLoadingComparison(true);
+
         try {
-            const params = {
-                lat: currentRoom.latitude,
-                lng: currentRoom.longitude,
-                radius: 3000,
-                size: 20
-            };
+            const { rooms: comparableRooms, radius: usedRadius, areaLevel } =
+                await fetchRoomsBySmartRadius(currentRoom);
 
-            const res = await roomService.searchRooms(params);
-            const roomsInArea = res.data?.content || [];
-            const otherRooms = roomsInArea.filter(r => r.id?.toString() !== id?.toString());
+            const cheaperOnes = comparableRooms
+                .filter(r => Number(r.price) < Number(currentRoom.price))
+                .sort((a, b) => {
+                    const priceDiff = Number(a.price) - Number(b.price);
+                    if (priceDiff !== 0) return priceDiff;
 
-            // Lọc phòng rẻ hơn
-            const cheaperOnes = otherRooms
-                .filter(r => r.price < currentRoom.price)
-                .sort((a, b) => a.price - b.price);
+                    return (b.similarityScore || 0) - (a.similarityScore || 0);
+                });
 
             setCheaperRooms(cheaperOnes.slice(0, 4));
 
-            // Tính toán stats nếu có phòng xung quanh
-            if (otherRooms.length > 0) {
-                const avg = otherRooms.reduce((sum, r) => sum + r.price, 0) / otherRooms.length;
-                const diff = ((currentRoom.price - avg) / avg) * 100;
+            if (comparableRooms.length > 0) {
+                const avg =
+                    comparableRooms.reduce((sum, r) => sum + Number(r.price || 0), 0) /
+                    comparableRooms.length;
+
+                const diff =
+                    avg > 0
+                        ? ((Number(currentRoom.price) - avg) / avg) * 100
+                        : 0;
+
                 setNearbyStats({
                     avgPrice: avg,
                     diffPercentage: diff.toFixed(1),
-                    totalNearby: otherRooms.length
+                    totalNearby: comparableRooms.length,
+                    radius: usedRadius,
+                    areaLevel,
                 });
             } else {
-                setNearbyStats({ avgPrice: 0, diffPercentage: 0, totalNearby: 0 });
+                setNearbyStats({
+                    avgPrice: 0,
+                    diffPercentage: 0,
+                    totalNearby: 0,
+                    radius: usedRadius,
+                    areaLevel,
+                });
             }
+
+           
         } catch (error) {
             console.error("Lỗi lấy dữ liệu so sánh:", error);
             message.error("Không thể lấy dữ liệu so sánh khu vực");
         } finally {
             setLoadingComparison(false);
-            setHasSearched(true); // Đánh dấu đã tải xong
+            setHasSearched(true);
         }
     };
 
@@ -1171,7 +1312,7 @@ const RoomDetail = () => {
                                         <Line type="monotone" dataKey="popular" name="Giá phổ biến" stroke="#0d9488" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                                         <Line type="monotone" dataKey="lowest" name="Giá thấp nhất" stroke="#facc15" strokeWidth={2} dot={false} connectNulls />
 
-                                        {/* 🔴 CHẤM ĐỎ GIÁ PHÒNG NÀY (LƠ LỬNG) */}
+
                                         <Line
                                             type="monotone"
                                             dataKey="thisRoom"
@@ -1253,18 +1394,27 @@ const RoomDetail = () => {
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-bold m-0 flex items-center gap-2">
-                                                Phòng giá tốt nhất khu vực
+                                                So sánh giá cùng loại trong khu vực
                                                 {cheaperRooms.length === 0 && (
                                                     isComparisonExpanded ? <UpOutlined className="text-xs text-gray-400" /> : <DownOutlined className="text-xs text-gray-400" />
                                                 )}
                                             </h3>
-                                            <p className="text-gray-500 text-xs m-0">Bán kính 3km quanh đây</p>
+                                            <p className="text-gray-500 text-xs m-0">
+                                                {nearbyStats.radius
+                                                    ? `So sánh trong bán kính ${nearbyStats.radius / 1000}km ${nearbyStats.areaLevel === 'district'
+                                                        ? 'cùng quận/huyện'
+                                                        : 'cùng tỉnh/thành'
+                                                    }`
+                                                    : 'Đang phân tích khu vực'}
+                                            </p>
                                         </div>
                                     </div>
                                     {cheaperRooms.length > 0 ? (
                                         <Tag color="orange" className="font-bold">GỢI Ý TỐT</Tag>
+                                    ) : nearbyStats.totalNearby > 0 ? (
+                                        <Tag color="green" className="font-bold">GIÁ TỐT</Tag>
                                     ) : (
-                                        <Tag color="green" className="font-bold">GIÁ TỐT NHẤT</Tag>
+                                        <Tag color="default" className="font-bold">CHƯA ĐỦ DỮ LIỆU</Tag>
                                     )}
                                 </div>
 
@@ -1279,13 +1429,17 @@ const RoomDetail = () => {
                                                         // TRƯỜNG HỢP 1: Bán kính 3km không có bất kỳ phòng nào khác để so sánh
                                                         <div className="text-gray-500">
                                                             <p className="font-medium mb-1">Khu vực này hiện chưa có dữ liệu phòng khác</p>
-                                                            <p className="text-xs">Chúng tôi chưa tìm thấy phòng nào khác trong bán kính 3km để so sánh.</p>
+                                                            <p className="text-xs">
+                                                                Chúng tôi chưa tìm thấy bài cùng loại trong phạm vi phù hợp để so sánh.
+                                                            </p>
                                                         </div>
                                                     ) : (
                                                         // TRƯỜNG HỢP 2: Có phòng xung quanh nhưng toàn phòng đắt hơn phòng này
                                                         <div className="text-gray-500">
                                                             <p className="font-medium mb-1">Đây là phòng có giá tốt nhất khu vực!</p>
-                                                            <p className="text-xs">Tìm thấy {nearbyStats.totalNearby} phòng lân cận nhưng không có phòng nào giá rẻ hơn phòng này.</p>
+                                                            <p className="text-xs">
+                                                                Tìm thấy {nearbyStats.totalNearby} bài cùng loại trong khu vực nhưng chưa có bài nào rẻ hơn.
+                                                            </p>
                                                         </div>
                                                     )
                                                 }
@@ -1319,7 +1473,7 @@ const RoomDetail = () => {
                                                         />
                                                         <div className="font-bold text-[13px] line-clamp-1">{item.title}</div>
                                                         <div className="text-red-600 font-bold mt-1 text-sm">
-                                                            {item.price?.toLocaleString()} đ
+                                                            {formatPriceByTransaction(item.price, item.transactionType)}
                                                         </div>
                                                     </Card>
                                                 </Col>
