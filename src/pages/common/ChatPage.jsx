@@ -179,7 +179,13 @@ const ChatPage = () => {
                 fullName: summary?.fullName || conv.fullName,
                 avatar: summary?.avatarUrl || conv.avatar,
               };
-            } catch {
+            } catch (err) {
+              console.error(
+                "LOAD_CUSTOMER_SUMMARY_FAILED",
+                partnerId,
+                err.response?.status,
+                err.response?.data
+              );
               return conv;
             }
           }
