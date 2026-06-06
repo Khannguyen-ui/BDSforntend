@@ -97,7 +97,7 @@ const ZaloIcon = () => (
 );
 
 const RoomDetail = () => {
-    const { message, modal } = App.useApp();
+    const { message } = App.useApp();
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -143,7 +143,10 @@ const RoomDetail = () => {
     const [loadingComparison, setLoadingComparison] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [isComparisonExpanded, setIsComparisonExpanded] = useState(false);
-    const comparisonRef = React.useRef(null); // Để scroll tới khi bấm nút
+    const comparisonRef = React.useRef(null);
+    const handleUploadChange = ({ fileList: newFileList }) => {
+        setFileList(newFileList);
+    };
 
 
     const fetchNearbyComparison = async (currentRoom) => {
@@ -400,35 +403,43 @@ const RoomDetail = () => {
         }
     };
     // List Post video
-    const fetchVideoRooms = async () => {
+    const fetchVideoRooms = async (currentRoomData) => {
         setLoadingVideoRooms(true);
         try {
-            const res = await roomService.getVideoRooms({ size: 10 });
+            const res = await roomService.getVideoRooms({ size: 12 });
             const allVideoRooms = res.data?.content || res.data?.items || res.data || [];
 
             const filteredAndSorted = allVideoRooms
                 .filter(r => r.id?.toString() !== id?.toString())
+                .filter(r => {
+                    if (!currentRoomData) return true;
+
+                    return (
+                        r.district === currentRoomData.district ||
+                        r.province === currentRoomData.province ||
+                        r.propertyType === currentRoomData.propertyType
+                    );
+                })
                 .sort((a, b) => (b.priorityLevel || 0) - (a.priorityLevel || 0))
                 .slice(0, 4);
 
-            // NÂNG CẤP FRONTEND THÔNG MINH: 
-            // Do API Reels của Backend thiếu trường images/thumbnail, 
-            // ta sẽ gọi đồng thời API chi tiết của 4 phòng này để lấy danh sách ảnh chính xác!
             const enrichedRooms = await Promise.all(
                 filteredAndSorted.map(async (item) => {
                     try {
                         const detailRes = await roomService.getRoomById(item.id);
                         const detailData = detailRes.data;
-                        if (detailData && detailData.images) {
+
+                        if (detailData?.images) {
                             return {
                                 ...item,
                                 images: detailData.images,
-                                thumbnail: detailData.thumbnail || (detailData.images.length > 0 ? detailData.images[0] : null)
+                                thumbnail: detailData.thumbnail || detailData.images[0] || null,
                             };
                         }
                     } catch (err) {
                         console.warn(`Lỗi tải chi tiết phòng ${item.id} để lấy ảnh:`, err);
                     }
+
                     return item;
                 })
             );
@@ -439,10 +450,6 @@ const RoomDetail = () => {
         } finally {
             setLoadingVideoRooms(false);
         }
-    };
-    // Upload ảnh review
-    const handleUploadChange = ({ fileList: newFileList }) => {
-        setFileList(newFileList);
     };
     //Lịch sử đơn giá
     const fetchPriceHistoryData = async (targetRoom = room) => {
@@ -674,6 +681,7 @@ const RoomDetail = () => {
                 // 4. Các dữ liệu phụ
                 fetchNearbyComparison(currentRoomData);
                 fetchPriceHistoryData(currentRoomData);
+                fetchVideoRooms(currentRoomData);
 
             } catch (error) {
                 console.error("Lỗi tải trang chi tiết:", error);
@@ -682,7 +690,7 @@ const RoomDetail = () => {
                 setLoading(false);
             }
         };
-        fetchVideoRooms();
+
         fetchData();
     }, [id, user]);
 
@@ -1661,7 +1669,7 @@ const RoomDetail = () => {
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
                                 <div className="bg-red-600 w-1.5 h-7 rounded-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
-                                <h3 className="text-xl font-bold text-gray-800 m-0 uppercase tracking-tight">Khám phá qua Video thực tế</h3>
+                                <h3 className="text-xl font-bold text-gray-800 m-0 uppercase tracking-tight">Video thực tế gần khu vực này</h3>
                                 <Tag color="red" className="ml-2 border-none font-bold text-[10px] animate-pulse">HOT</Tag>
                             </div>
                         </div>
