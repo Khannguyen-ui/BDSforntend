@@ -248,37 +248,57 @@ const CreateRoom = () => {
         setLoading(false);
         return;
       }
+      if (!values.province || !values.ward) {
+        message.error("Vui lòng chọn Tỉnh/Thành phố và Phường/Xã!");
+        setLoading(false);
+        return;
+      }
 
-      // Xây dựng Payload gửi xuống Backend
+      if (!values.district && !values.ward && !values.province) {
+        message.error("Thiếu thông tin khu vực. Vui lòng chọn lại vị trí!");
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         projectId: values.projectId || null,
-        title: values.title,
+
+        title: values.title?.trim(),
+        description: values.description || "Không có mô tả",
+
         propertyType: values.propertyType || "ROOM",
         transactionType: values.transactionType || "FOR_RENT",
-        address: values.address,
-        province: values.province || "Không xác định",
-        district: values.district || "Không xác định",
-        ward: values.ward || "Không xác định",
+
+        address: values.address?.trim(),
+        province: values.province,
+        district: values.district || values.ward || values.province,
+        ward: values.ward,
         street: values.street || values.address,
-        latitude: values.latitude || 10.7769,
-        longitude: values.longitude || 106.7009,
+
+        latitude: Number(values.latitude),
+        longitude: Number(values.longitude),
+
         amenities: values.amenities || [],
-        price: values.price ? Number(values.price.toString().replace(/,/g, '')) : 0,
-        deposit: values.deposit ? Number(values.deposit.toString().replace(/,/g, '')) : 0,
-        area: values.area || 0,
-        capacity: values.capacity || 1,
-        bedrooms: values.bedrooms || 0,
-        bathrooms: values.bathrooms || 0,
-        furnishingStatus: values.furnishingStatus || "UNFURNISHED",
-        description: values.description || "Không có mô tả",
         images: imageUrls,
-        videoUrl: values.videoUrl || "",
-        legalDocumentType: "NONE",
-        electricityPrice: "NEGOTIABLE",
-        waterPrice: "NEGOTIABLE",
-        internetPrice: "NEGOTIABLE",
-        availabilityStatus: "IMMEDIATELY",
-        servicePackageId: (values.servicePackageId && values.servicePackageId !== 'FREE') ? values.servicePackageId : null
+        videoUrl: values.videoUrl || null,
+
+        price: values.price ? Number(values.price.toString().replace(/,/g, '')) : 0,
+        area: values.area ? Number(values.area) : 0,
+        capacity: values.capacity ?? null,
+
+        bedrooms: values.bedrooms ?? 0,
+        bathrooms: values.bathrooms ?? 0,
+        hasBalcony: values.hasBalcony ?? false,
+
+        furnishingStatus: values.furnishingStatus || "UNFURNISHED",
+        availabilityStatus: values.availabilityStatus || "IMMEDIATELY",
+
+        electricityPrice: values.electricityPrice || "NEGOTIABLE",
+        waterPrice: values.waterPrice || "NEGOTIABLE",
+        internetPrice: values.internetPrice || "NEGOTIABLE",
+
+        legalDocumentType: values.legalDocumentType || "NONE",
+        validityDays: values.validityDays || 30
       };
 
       // GỌI API tạo phòng (Lúc này đã có quota nếu vừa mua xong)
@@ -325,6 +345,13 @@ const CreateRoom = () => {
             propertyType: 'ROOM',
             transactionType: 'FOR_RENT',
             furnishingStatus: 'UNFURNISHED',
+            availabilityStatus: 'IMMEDIATELY',
+            legalDocumentType: 'NONE',
+            electricityPrice: 'NEGOTIABLE',
+            waterPrice: 'NEGOTIABLE',
+            internetPrice: 'NEGOTIABLE',
+            hasBalcony: false,
+            validityDays: 30,
             latitude: 10.7769,
             longitude: 106.7009
           }}
@@ -389,7 +416,7 @@ const CreateRoom = () => {
             <Form.Item name="address" label="Địa chỉ hiển thị" rules={[{ required: true }]}>
               <Input prefix={<EnvironmentOutlined className="text-red-500" />} placeholder="Số nhà, tên đường, phường, quận..." size="large" />
             </Form.Item>
-            
+
             <Row gutter={16} className="mb-4">
               <Col span={12}>
                 <Form.Item label="Tỉnh/Thành phố (Bắt buộc)" required>
@@ -447,14 +474,7 @@ const CreateRoom = () => {
                 </Space.Compact>
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="deposit" label="Tiền cọc" rules={[{ required: true }]}>
-                <Space.Compact className="w-full">
-                  <InputNumber className="w-full" size="large" formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={v => v.replace(/\$\s?|(,*)/g, '')} />
-                  <Button style={{ pointerEvents: 'none' }}>VND</Button>
-                </Space.Compact>
-              </Form.Item>
-            </Col>
+
             <Col span={8}>
               <Form.Item name="area" label="Diện tích (m2)" rules={[{ required: true }]}>
                 <InputNumber className="w-full" size="large" min={1} />
@@ -472,6 +492,81 @@ const CreateRoom = () => {
                   <Option value="FULLY_FURNISHED">Đầy đủ</Option>
                   <Option value="PARTIALLY_FURNISHED">Cơ bản</Option>
                   <Option value="UNFURNISHED">Trống</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={24}>
+            <Col span={6}>
+              <Form.Item name="hasBalcony" label="Ban công" initialValue={false}>
+                <Select size="large">
+                  <Option value={true}>Có ban công</Option>
+                  <Option value={false}>Không có</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item name="availabilityStatus" label="Thời gian vào ở" initialValue="IMMEDIATELY">
+                <Select size="large">
+                  <Option value="IMMEDIATELY">Vào ở ngay</Option>
+                  <Option value="THIS_MONTH">Trong tháng này</Option>
+                  <Option value="NEXT_MONTH">Đầu tháng sau</Option>
+                  <Option value="NEGOTIABLE">Thỏa thuận</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item name="legalDocumentType" label="Pháp lý" initialValue="NONE">
+                <Select size="large">
+                  <Option value="NONE">Không cung cấp</Option>
+                  <Option value="CERTIFICATE_OF_OWNERSHIP">Sổ đỏ / Sổ hồng</Option>
+                  <Option value="LEASE_CONTRACT">Hợp đồng thuê</Option>
+                  <Option value="AUTHORIZATION_LETTER">Giấy ủy quyền</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item name="validityDays" label="Thời hạn tin" initialValue={30}>
+                <InputNumber min={1} max={365} className="w-full" size="large" addonAfter="ngày" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={8}>
+              <Form.Item name="electricityPrice" label="Giá điện" initialValue="NEGOTIABLE">
+                <Select size="large">
+                  <Option value="FREE">Miễn phí</Option>
+                  <Option value="STATE_PRICE">Theo giá nhà nước</Option>
+                  <Option value="LANDLORD_PRICE">Theo quy định chủ nhà</Option>
+                  <Option value="SHARED">Chia đều</Option>
+                  <Option value="NEGOTIABLE">Thỏa thuận</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item name="waterPrice" label="Giá nước" initialValue="NEGOTIABLE">
+                <Select size="large">
+                  <Option value="FREE">Miễn phí</Option>
+                  <Option value="STATE_PRICE">Theo giá nhà nước</Option>
+                  <Option value="LANDLORD_PRICE">Theo quy định chủ nhà</Option>
+                  <Option value="SHARED">Chia đều</Option>
+                  <Option value="NEGOTIABLE">Thỏa thuận</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item name="internetPrice" label="Internet" initialValue="NEGOTIABLE">
+                <Select size="large">
+                  <Option value="FREE">Miễn phí</Option>
+                  <Option value="LANDLORD_PRICE">Theo quy định chủ nhà</Option>
+                  <Option value="SHARED">Chia đều</Option>
+                  <Option value="NEGOTIABLE">Thỏa thuận</Option>
                 </Select>
               </Form.Item>
             </Col>
