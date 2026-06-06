@@ -204,7 +204,12 @@ const RoomDetail = () => {
             normalizeText(candidate?.district) === normalizeText(currentRoom?.district)
         );
     };
-
+    const isSameWard = (candidate, currentRoom) => {
+        return (
+            normalizeText(candidate?.ward) &&
+            normalizeText(candidate?.ward) === normalizeText(currentRoom?.ward)
+        );
+    };
     const isSameProvince = (candidate, currentRoom) => {
         return (
             normalizeText(candidate?.province) &&
@@ -213,19 +218,19 @@ const RoomDetail = () => {
     };
     const fetchRoomsBySmartRadius = async (currentRoom) => {
         const steps = [
-            { radius: 3000, areaLevel: 'district' },
-            { radius: 5000, areaLevel: 'district' },
+            { radius: 3000, areaLevel: 'ward' },
+            { radius: 5000, areaLevel: 'ward' },
             { radius: 10000, areaLevel: 'province' },
         ];
 
         for (const step of steps) {
             const res = await roomService.searchRooms({
-                lat: Number(currentRoom.latitude),
-                lng: Number(currentRoom.longitude),
-                radius: step.radius,
+                latitude: Number(currentRoom.latitude),
+                longitude: Number(currentRoom.longitude),
+                radiusKm: step.radius / 1000,
                 size: 50,
-                propertyType: currentRoom.propertyType,
-                transactionType: currentRoom.transactionType,
+                propertyTypes: currentRoom.propertyType ? [currentRoom.propertyType] : undefined,
+                transactionTypes: currentRoom.transactionType ? [currentRoom.transactionType] : undefined,
             });
 
             const rawData =
@@ -242,8 +247,8 @@ const RoomDetail = () => {
                 .filter(r => Number(r.price) > 0)
                 .filter(r => isSameCoreType(r, currentRoom))
                 .filter(r => {
-                    if (step.areaLevel === 'district') {
-                        return isSameDistrict(r, currentRoom);
+                    if (step.areaLevel === 'ward') {
+                        return isSameWard(r, currentRoom);
                     }
 
                     return isSameProvince(r, currentRoom);
@@ -253,7 +258,7 @@ const RoomDetail = () => {
                     similarityScore: getSimilarityScore(r, currentRoom),
                 }));
 
-            if (validRooms.length >= 3 || step.radius === 10000) {
+            if (validRooms.length >= 1 || step.radius === 10000) {
                 return {
                     rooms: validRooms,
                     radius: step.radius,
@@ -322,7 +327,7 @@ const RoomDetail = () => {
                 });
             }
 
-           
+
         } catch (error) {
             console.error("Lỗi lấy dữ liệu so sánh:", error);
             message.error("Không thể lấy dữ liệu so sánh khu vực");
@@ -1401,8 +1406,8 @@ const RoomDetail = () => {
                                             </h3>
                                             <p className="text-gray-500 text-xs m-0">
                                                 {nearbyStats.radius
-                                                    ? `So sánh trong bán kính ${nearbyStats.radius / 1000}km ${nearbyStats.areaLevel === 'district'
-                                                        ? 'cùng quận/huyện'
+                                                    ? `So sánh trong bán kính ${nearbyStats.radius / 1000}km ${nearbyStats.areaLevel === 'ward'
+                                                        ? 'cùng phường/xã'
                                                         : 'cùng tỉnh/thành'
                                                     }`
                                                     : 'Đang phân tích khu vực'}
