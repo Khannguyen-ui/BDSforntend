@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Table, Button, Tag, Space, Tabs, Popconfirm, message, Modal, 
-  Form, Input, InputNumber, Select, Tooltip 
+import {
+  Table, Button, Tag, Space, Tabs, Popconfirm, message, Modal,
+  Form, Input, InputNumber, Select, Tooltip
 } from 'antd';
-import { 
-  DeleteOutlined, UndoOutlined, StopOutlined, 
-  PlusOutlined, EditOutlined 
+import {
+  DeleteOutlined, UndoOutlined, StopOutlined,
+  PlusOutlined, EditOutlined
 } from '@ant-design/icons';
 import adminService from '../../services/adminService';
+import LocationPicker from '../../components/shared/LocationPicker';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { TabPane } = Tabs;
@@ -25,11 +27,24 @@ const ProjectManagement = () => {
   const [editingId, setEditingId] = useState(null);
   const [form] = Form.useForm();
 
+  const handleProjectLocationChange = (lat, lng, addressData) => {
+    form.setFieldsValue({
+      latitude: lat,
+      longitude: lng
+    });
+
+    if (addressData?.fullAddress) {
+      form.setFieldsValue({
+        address: addressData.fullAddress
+      });
+    }
+  };
+
   // --- FETCH DATA ---
   const fetchActiveProjects = async () => {
     setLoading(true);
     try {
-      const res = await adminService.getAllProjects(0, 100); 
+      const res = await adminService.getAllProjects(0, 100);
       const data = res.data?.content || res.data?.result || res.data?.data || [];
       setActiveProjects(data);
     } catch (error) {
@@ -213,19 +228,19 @@ const ProjectManagement = () => {
 
       <Tabs defaultActiveKey="1" onChange={(key) => setActiveTab(key)} type="card">
         <TabPane tab={<span className="font-medium">Dự Án Đang Hoạt Động</span>} key="1">
-          <Table 
-            dataSource={activeProjects} 
-            columns={activeColumns} 
-            rowKey="id" 
-            loading={loading && activeTab === '1'} 
+          <Table
+            dataSource={activeProjects}
+            columns={activeColumns}
+            rowKey="id"
+            loading={loading && activeTab === '1'}
           />
         </TabPane>
         <TabPane tab={<span className="font-medium text-red-500"><DeleteOutlined /> Thùng Rác</span>} key="2">
-          <Table 
-            dataSource={trashProjects} 
-            columns={trashColumns} 
-            rowKey="id" 
-            loading={loading && activeTab === '2'} 
+          <Table
+            dataSource={trashProjects}
+            columns={trashColumns}
+            rowKey="id"
+            loading={loading && activeTab === '2'}
           />
         </TabPane>
       </Tabs>
@@ -257,21 +272,44 @@ const ProjectManagement = () => {
             </Form.Item>
           </div>
 
-          <Form.Item name="address" label="Địa chỉ cụ thể" rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}>
-            <Input placeholder="Ví dụ: 123 Đường ABC, Quận X..." size="large" />
+          <Form.Item
+            name="address"
+            label="Địa chỉ dự án / khu trọ"
+            rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập địa chỉ!' }]}
+          >
+            <Input
+              prefix={<EnvironmentOutlined className="text-red-500" />}
+              placeholder="Địa chỉ sẽ tự điền khi chọn vị trí trên bản đồ"
+              size="large"
+            />
           </Form.Item>
 
-          <div className="flex gap-4">
-            <Form.Item name="latitude" label="Vĩ độ (Latitude)" className="flex-1" rules={[{ required: true, message: 'Nhập Vĩ độ!' }]}>
-              <InputNumber placeholder="Ví dụ: 10.762622" size="large" className="w-full" style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item name="longitude" label="Kinh độ (Longitude)" className="flex-1" rules={[{ required: true, message: 'Nhập Kinh độ!' }]}>
-              <InputNumber placeholder="Ví dụ: 106.660172" size="large" className="w-full" style={{ width: '100%' }} />
-            </Form.Item>
+          <div className="mb-4">
+            <div className="font-semibold text-gray-700 mb-2">
+              Chọn vị trí dự án trên bản đồ
+            </div>
+
+            <LocationPicker
+              onCoordinatesChange={handleProjectLocationChange}
+              initialLat={form.getFieldValue('latitude') || 10.7769}
+              initialLng={form.getFieldValue('longitude') || 106.7009}
+            />
           </div>
 
-          <Form.Item name="amenities" label="Tiện ích nổi bật (Nhập và ấn Enter để thêm)">
-            <Select mode="tags" size="large" placeholder="Ví dụ: Hồ bơi, Bảo vệ 24/7, Gần siêu thị..." />
+          <Form.Item
+            name="latitude"
+            hidden
+            rules={[{ required: true, message: 'Vui lòng chọn vị trí trên bản đồ!' }]}
+          >
+            <InputNumber />
+          </Form.Item>
+
+          <Form.Item
+            name="longitude"
+            hidden
+            rules={[{ required: true, message: 'Vui lòng chọn vị trí trên bản đồ!' }]}
+          >
+            <InputNumber />
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả">
