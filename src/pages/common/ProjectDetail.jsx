@@ -53,7 +53,7 @@ const ProjectDetail = () => {
   const fetchProjectRooms = async () => {
     setRoomsLoading(true);
     try {
-      const res = await roomService.getPublicPropertiesByProject(id, 0, 20);
+      const res = await roomService.getRoomsByProject(id, 0, 20);
       const data = normalizePageData(res);
       setRooms(data);
     } catch (error) {
