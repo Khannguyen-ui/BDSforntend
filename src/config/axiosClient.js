@@ -7,127 +7,133 @@ const axiosClient = axios.create({
   },
 });
 
-// Gắn token
-axiosClient.interceptors.request.use((config) => {
-  // 1. Ưu tiên Admin session
+const getCurrentToken = () => {
   const adminSessionId = sessionStorage.getItem('adminSessionId');
-  let token = null;
 
   if (adminSessionId) {
-    token = sessionStorage.getItem(`${adminSessionId}_accessToken`);
-  }
-
-  // 2. Fallback về User session
-  if (!token) {
-    const userSessionId = sessionStorage.getItem('userSessionId');
-    if (userSessionId) {
-      token = sessionStorage.getItem(`${userSessionId}_accessToken`);
+    const adminToken = sessionStorage.getItem(`${adminSessionId}_accessToken`);
+    if (adminToken) {
+      return {
+        token: adminToken,
+        sessionId: adminSessionId,
+        sessionType: 'admin',
+      };
     }
   }
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const userSessionId = sessionStorage.getItem('userSessionId');
+
+  if (userSessionId) {
+    const userToken = sessionStorage.getItem(`${userSessionId}_accessToken`);
+    if (userToken) {
+      return {
+        token: userToken,
+        sessionId: userSessionId,
+        sessionType: 'user',
+      };
+    }
+  }
+
+  return null;
+};
+
+const clearAuthStorage = () => {
+  const guestId = localStorage.getItem('guestId');
+
+  sessionStorage.clear();
+
+  localStorage.removeItem('user');
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+
+  if (guestId) {
+    localStorage.setItem('guestId', guestId);
+  }
+};
+
+const isAuthPublicEndpoint = (url = '') => {
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/forgot-password') ||
+    url.includes('/auth/reset-password') ||
+    url.includes('/auth/refresh')
+  );
+};
+
+axiosClient.interceptors.request.use((config) => {
+  const currentAuth = getCurrentToken();
+
+  if (currentAuth?.token) {
+    config.headers.Authorization = `Bearer ${currentAuth.token}`;
   } else {
-    // Xử lý X-Guest-Id cho khách vãng lai khi CHƯA đăng nhập
     let guestId = localStorage.getItem('guestId');
+
     if (!guestId || isNaN(guestId)) {
-      // Sử dụng ID dạng số nguyên lớn (Date.now()) để tránh lỗi 400 Bad Request khi backend expect Long
       guestId = Date.now().toString();
       localStorage.setItem('guestId', guestId);
     }
+
     config.headers['X-Guest-Id'] = guestId;
   }
 
   return config;
 });
 
-// Bắt lỗi 401 tự động để Refresh Token
 axiosClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Chỉ thực hiện refresh token khi có lỗi 401 (Hết hạn) và chưa retry bao giờ
-    axiosClient.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
 
-        if (!originalRequest) {
-          return Promise.reject(error);
-        }
+    const status = error.response?.status;
+    const url = originalRequest.url || '';
 
-        const status = error.response?.status;
-        const url = originalRequest.url || '';
+    if (status === 401 && isAuthPublicEndpoint(url)) {
+      return Promise.reject(error);
+    }
 
-        const isAuthPublicEndpoint =
-          url.includes('/auth/login') ||
-          url.includes('/auth/register') ||
-          url.includes('/auth/forgot-password') ||
-          url.includes('/auth/reset-password') ||
-          url.includes('/auth/refresh');
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-        if (status === 401 && isAuthPublicEndpoint) {
-          return Promise.reject(error);
-        }
+      const currentAuth = getCurrentToken();
 
-        if (status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          const adminSessionId = sessionStorage.getItem('adminSessionId');
-          const userSessionId = sessionStorage.getItem('userSessionId');
-
-          const oldToken =
-            (adminSessionId && sessionStorage.getItem(`${adminSessionId}_accessToken`)) ||
-            (userSessionId && sessionStorage.getItem(`${userSessionId}_accessToken`));
-
-          if (!oldToken) {
-            sessionStorage.clear();
-            localStorage.removeItem('token');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
-
-            return Promise.reject(error);
-          }
-
-          try {
-            const res = await axios.post('/auth/refresh', null, {
-              headers: {
-                Authorization: `Bearer ${oldToken}`
-              }
-            });
-
-            const newToken = res.data?.result?.token;
-
-            if (!newToken) {
-              throw new Error('Không nhận được token mới');
-            }
-
-            if (adminSessionId) {
-              sessionStorage.setItem(`${adminSessionId}_accessToken`, newToken);
-            } else if (userSessionId) {
-              sessionStorage.setItem(`${userSessionId}_accessToken`, newToken);
-            }
-
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return axiosClient(originalRequest);
-          } catch (refreshError) {
-            sessionStorage.clear();
-            localStorage.removeItem('token');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
-
-            return Promise.reject(refreshError);
-          }
-        }
-
+      if (!currentAuth?.token) {
+        clearAuthStorage();
         return Promise.reject(error);
       }
-    );
+
+      try {
+        const res = await axios.post('/auth/refresh', null, {
+          headers: {
+            Authorization: `Bearer ${currentAuth.token}`,
+          },
+        });
+
+        const newToken = res.data?.result?.token;
+
+        if (!newToken) {
+          throw new Error('Không nhận được token mới');
+        }
+
+        if (currentAuth.sessionType === 'admin') {
+          sessionStorage.setItem(`${currentAuth.sessionId}_accessToken`, newToken);
+        } else {
+          sessionStorage.setItem(`${currentAuth.sessionId}_accessToken`, newToken);
+        }
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return axiosClient(originalRequest);
+      } catch (refreshError) {
+        clearAuthStorage();
+        return Promise.reject(refreshError);
+      }
+    }
 
     return Promise.reject(error);
   }
