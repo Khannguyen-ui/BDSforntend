@@ -234,10 +234,14 @@ const MyRooms = () => {
     if (isExpired) {
       Modal.confirm({
         title: 'Tin đã hết hạn!',
-        content: 'Tin này đã hết hạn hiển thị. Bạn cần mua gói Đẩy Tin hoặc gia hạn để đăng lại.',
-        okText: 'Đẩy tin ngay',
-        cancelText: 'Để sau',
-        onOk: () => handleOpenPushModal(room)
+        if(isExpired) {
+          Modal.warning({
+            title: 'Tin đã hết hạn!',
+            content: 'Tin này đã hết hạn hiển thị. Vui lòng gia hạn hoặc đăng lại tin trước khi mua gói đẩy tin.',
+            okText: 'Đã hiểu'
+          });
+          return;
+        }
       });
       return;
     }
@@ -257,8 +261,40 @@ const MyRooms = () => {
 
   // ============================================================
 
-  // --- LOGIC ĐẨY TIN (PUSH) ---
+  const canPushRoom = (room) => {
+    const isExpired =
+      room.status === 'EXPIRED' ||
+      (room.expiresAt && dayjs().isAfter(dayjs(room.expiresAt)));
+
+    return room.status === 'ACTIVE' && !isExpired;
+  };
+
+  const getPushDisabledReason = (room) => {
+    if (room.status === 'PENDING') {
+      return 'Tin đang chờ duyệt, chưa thể mua gói đẩy tin.';
+    }
+
+    if (room.status === 'REJECTED') {
+      return 'Tin đã bị từ chối, không thể mua gói đẩy tin.';
+    }
+
+    if (room.status === 'HIDDEN') {
+      return 'Tin đang ẩn, hãy đăng lại tin trước khi đẩy tin.';
+    }
+
+    if (room.status === 'EXPIRED' || (room.expiresAt && dayjs().isAfter(dayjs(room.expiresAt)))) {
+      return 'Tin đã hết hạn, không thể mua gói đẩy tin.';
+    }
+
+    return 'Chỉ có thể đẩy tin khi bài đã được duyệt và đang hiển thị.';
+  };
+
   const handleOpenPushModal = (room) => {
+    if (!canPushRoom(room)) {
+      message.warning(getPushDisabledReason(room));
+      return;
+    }
+
     setSelectedRoomToPush(room);
     setSelectedPackageId(null);
     setIsPushModalOpen(true);
@@ -270,6 +306,11 @@ const MyRooms = () => {
       return;
     }
     const pkg = pushPackages.find(p => p.id === selectedPackageId);
+    if (!selectedRoomToPush || !canPushRoom(selectedRoomToPush)) {
+      message.warning(getPushDisabledReason(selectedRoomToPush || {}));
+      setIsPushModalOpen(false);
+      return;
+    }
 
     modal.confirm({
       title: 'Xác nhận thanh toán',
@@ -298,13 +339,15 @@ const MyRooms = () => {
           setIsPushModalOpen(false);
           fetchMyRooms();
         } catch (error) {
-          console.error("🚨 CHI TIẾT LỖI THANH TOÁN:", error);
+          console.error(" CHI TIẾT LỖI THANH TOÁN:", error);
           const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || '';
-          const isInsufficient = errorMsg.toLowerCase().includes('số dư') ||
-            errorMsg.toLowerCase().includes('không đủ tiền') ||
-            errorMsg.toLowerCase().includes('balance') ||
-            error.response?.status === 400;
+          const lowerMsg = errorMsg.toLowerCase();
 
+          const isInsufficient =
+            lowerMsg.includes('số dư') ||
+            lowerMsg.includes('không đủ tiền') ||
+            lowerMsg.includes('balance') ||
+            lowerMsg.includes('insufficient');
           if (isInsufficient) {
             Modal.warning({
               title: 'Số dư ví không đủ!',
@@ -611,25 +654,35 @@ const MyRooms = () => {
       fixed: 'right',
       render: (_, r) => (
         <div className="flex flex-col gap-2">
-          {/* NÚT ĐẨY TIN */}
-          <Button
-            size="small"
-            className="bg-orange-50 text-[#f96302] border-[#f96302] hover:bg-[#f96302] hover:text-white font-bold"
-            onClick={() => handleOpenPushModal(r)}
-            icon={<RocketOutlined />}
-          >
-            Đẩy tin
-          </Button>
+          <Tooltip title={!canPushRoom(r) ? getPushDisabledReason(r) : 'Đẩy tin VIP'}>
+            <span>
+              <Button
+                size="small"
+                disabled={!canPushRoom(r)}
+                className={
+                  canPushRoom(r)
+                    ? "bg-orange-50 text-[#f96302] border-[#f96302] hover:bg-[#f96302] hover:text-white font-bold"
+                    : "bg-gray-100 text-gray-400 border-gray-200 font-bold cursor-not-allowed"
+                }
+                onClick={() => handleOpenPushModal(r)}
+                icon={<RocketOutlined />}
+              >
+                Đẩy tin
+              </Button>
+            </span>
+          </Tooltip>
 
           <div className="flex gap-2 justify-center">
             {r.status === 'EXPIRED' ? (
-              <Tooltip title="Tin đã hết hạn, cần gia hạn hoặc đẩy tin">
-                <Button
-                  size="small"
-                  icon={<ReloadOutlined />}
-                  onClick={() => handleOpenPushModal(r)}
-                  className="text-red-500 border-red-300"
-                />
+              <Tooltip title="Tin đã hết hạn, không thể đẩy tin. Vui lòng đăng/gia hạn lại tin trước.">
+                <span>
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    disabled
+                    className="text-gray-400 border-gray-200"
+                  />
+                </span>
               </Tooltip>
             ) : (
               <Tooltip title={r.status === 'HIDDEN' ? "Đăng lại tin" : "Ẩn tin tạm thời"}>
@@ -778,7 +831,7 @@ const MyRooms = () => {
                   <Row gutter={16}>
                     <Col span={6}><Form.Item label="Loại BĐS" name="propertyType"><Select><Option value="ROOM">Phòng trọ</Option><Option value="HOUSE">Nhà nguyên căn</Option><Option value="APARTMENT">Chung cư</Option></Select></Form.Item></Col>
                     <Col span={6}><Form.Item label="Giá (₫)" name="price"><InputNumber className="w-full" formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={v => Number(v.replace(/,/g, ''))} /></Form.Item></Col>
-                    <Col span={6}><Form.Item label="Cọc (₫)" name="deposit"><InputNumber className="w-full" formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={v => Number(v.replace(/,/g, ''))} /></Form.Item></Col>
+
                     <Col span={6}><Form.Item label="Diện tích (m²)" name="area"><InputNumber className="w-full" /></Form.Item></Col>
                   </Row>
                   <Row gutter={16}>
