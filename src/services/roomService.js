@@ -274,10 +274,7 @@ const roomService = {
 
   getRoomsByProject: (projectId, page = 0, size = 12) => {
     return axiosClient.get(`/public/properties/by-project/${projectId}`, {
-      params: {
-        page,
-        size
-      }
+      params: { page, size }
     });
   },
 };
