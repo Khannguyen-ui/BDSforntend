@@ -4,6 +4,7 @@ import useAuth from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../config/axiosClient";
 import { useSocket } from "../../contexts/SocketContext";
+import { message } from 'antd';
 
 // Quick reply suggestions
 const QUICK_REPLIES = [
@@ -77,21 +78,49 @@ export default function ChatBox() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const nodeRef = useRef(null);
-  const { user } = useAuth();
   const { aiMessage, resetAiMessage } = useSocket();
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const aiTimeoutRef = useRef(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Khởi tạo conversationId duy nhất hoặc lấy lại từ localStorage để AI duy trì ngữ cảnh
-  const [conversationId, setConversationId] = useState(() => {
-    const savedId = localStorage.getItem("ai-conversation-id");
-    if (savedId) return savedId;
-    const newId = `conv-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem("ai-conversation-id", newId);
-    return newId;
-  });
+  const [conversationId, setConversationId] = useState(null);
+
+  const getConversationStorageKey = useCallback(() => {
+    return user?.id ? `ai-conversation-id-${user.id}` : null;
+  }, [user?.id]);
+
+  const createConversationId = useCallback(() => {
+    if (!user?.id) return null;
+
+    return `user-${user.id}-conv-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setConversationId(null);
+      return;
+    }
+
+    const storageKey = `ai-conversation-id-${user.id}`;
+    const savedId = localStorage.getItem(storageKey);
+
+    if (savedId) {
+      setConversationId(savedId);
+      return;
+    }
+
+    const newId = `user-${user.id}-conv-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+
+    localStorage.setItem(storageKey, newId);
+    setConversationId(newId);
+  }, [user?.id]);
 
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem("chat-messages");
@@ -119,7 +148,7 @@ export default function ChatBox() {
     return true;
   });
 
- 
+
   useEffect(() => {
     localStorage.setItem("chat-messages", JSON.stringify(messages));
   }, [messages]);
@@ -161,7 +190,14 @@ export default function ChatBox() {
 
     if (aiMessage.conversationId) {
       setConversationId(aiMessage.conversationId);
-      localStorage.setItem("ai-conversation-id", aiMessage.conversationId);
+      if (aiMessage.conversationId) {
+        setConversationId(aiMessage.conversationId);
+
+        const storageKey = getConversationStorageKey();
+        if (storageKey) {
+          localStorage.setItem(storageKey, aiMessage.conversationId);
+        }
+      }
     }
 
     setMessages((prev) => [
@@ -177,26 +213,37 @@ export default function ChatBox() {
 
     setLoading(false);
     resetAiMessage();
-  }, [aiMessage, resetAiMessage]);
+  }, [aiMessage, resetAiMessage, getConversationStorageKey]);
 
   const sendMessage = useCallback(
     async (text) => {
+      if (!user) {
+        message.warning('Vui lòng đăng nhập để sử dụng trợ lý AI.');
+        navigate('/login');
+        return;
+      }
+      if (!conversationId) {
+        message.warning("Đang khởi tạo cuộc trò chuyện, vui lòng thử lại.");
+        return;
+      }
+
       const msgText = (text || input).trim();
       if (!msgText || loading) return;
 
       setInput("");
       setShowQuickReplies(false);
+
       setMessages((prev) => [
         ...prev,
         { role: "user", text: msgText, time: new Date().toISOString(), items: [] },
       ]);
+
       setLoading(true);
 
       if (aiTimeoutRef.current) {
         clearTimeout(aiTimeoutRef.current);
       }
 
-      // Đặt timeout phòng hờ lỗi mạng hoặc xử lý quá lâu từ phía Gemini
       aiTimeoutRef.current = setTimeout(() => {
         setMessages((prev) => [
           ...prev,
@@ -212,30 +259,52 @@ export default function ChatBox() {
 
       try {
         await axiosClient.post("/api/chat/test-ai-flow", {
-          conversationId: conversationId,
+          conversationId,
           userMessage: msgText,
         });
 
-        // Không kết thúc loading ở đây, đợi phản hồi từ kênh WebSocket!
+        // Không setLoading(false) ở đây, đợi phản hồi WebSocket.
       } catch (error) {
         console.error("Lỗi gửi REST AI Flow:", error);
+
         if (aiTimeoutRef.current) {
           clearTimeout(aiTimeoutRef.current);
           aiTimeoutRef.current = null;
         }
+
+        const status = error.response?.status;
+
+        if (status === 401) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "ai",
+              text: "🔐 Bạn cần đăng nhập để sử dụng trợ lý AI.",
+              time: new Date().toISOString(),
+              items: [],
+            },
+          ]);
+
+          message.warning("Vui lòng đăng nhập để sử dụng trợ lý AI.");
+          setLoading(false);
+          navigate("/login");
+          return;
+        }
+
         setMessages((prev) => [
           ...prev,
           {
             role: "ai",
-            text: "❌ Không thể gửi tin nhắn đến trợ lý AI. Vui lòng kiểm tra kết nối mạng và thử lại.",
+            text: " Không thể gửi tin nhắn đến trợ lý AI. Vui lòng kiểm tra kết nối mạng và thử lại.",
             time: new Date().toISOString(),
             items: [],
           },
         ]);
+
         setLoading(false);
       }
     },
-    [input, loading, conversationId]
+    [input, loading, conversationId, user, navigate]
   );
 
   const handleKeyDown = (e) => {
@@ -247,20 +316,30 @@ export default function ChatBox() {
 
   const clearHistory = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa lịch sử trò chuyện và bắt đầu lại?")) {
-      // 1. Xóa storage
       localStorage.removeItem("chat-messages");
-      localStorage.removeItem("ai-conversation-id");
 
-      // 2. Reset messages
+      const storageKey = getConversationStorageKey();
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
+
       setMessages([
-        { role: "ai", text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }
+        {
+          role: "ai",
+          text: "Chào bạn  Mình là  TRung — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? ",
+          time: new Date().toISOString(),
+          items: [],
+        },
       ]);
+
       setShowQuickReplies(true);
 
-      // 3. Tạo ngữ cảnh mới hoàn toàn
-      const newId = `conv-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      setConversationId(newId);
-      localStorage.setItem("ai-conversation-id", newId);
+      const newId = createConversationId();
+
+      if (newId && storageKey) {
+        setConversationId(newId);
+        localStorage.setItem(storageKey, newId);
+      }
     }
   };
 
@@ -281,7 +360,15 @@ export default function ChatBox() {
           style={{ bottom: "28px", right: "28px" }}
         >
           <button
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              if (!user) {
+                message.warning('Vui lòng đăng nhập để sử dụng trợ lý AI.');
+                navigate('/login');
+                return;
+              }
+
+              setOpen(true);
+            }}
             className="group relative flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.18)] border-2 border-green-500 hover:scale-110 transition-all duration-300 focus:outline-none"
             aria-label="Mở trợ lý AI"
           >
