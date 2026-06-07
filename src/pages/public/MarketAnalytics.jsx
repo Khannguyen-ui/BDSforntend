@@ -345,7 +345,7 @@ const MarketAnalytics = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 mt-6">
-        <Spin spinning={loading} tip="Đang truy xuất dữ liệu ElasticSearch...">
+        <Spin spinning={loading} tip="Đang truy xuất dữ liệu">
           <Row gutter={[24, 24]}>
             <Col span={24}>
               <Card className="rounded-2xl border-none shadow-sm bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-white overflow-hidden relative border-l-4 border-[#722ed1]">
