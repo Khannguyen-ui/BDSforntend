@@ -51,7 +51,7 @@ const Sidebar = () => {
   // State lưu số dư thực tế
   const [realTimeBalance, setRealTimeBalance] = useState(user?.accountBalance || 0);
 
-  
+
   useEffect(() => {
     const fetchLatestBalance = async () => {
       if (user?.id && isLandlord) {
@@ -101,7 +101,7 @@ const Sidebar = () => {
         label: 'Tài khoản & thông báo',
         children: [
           { key: '/profile', icon: <UserOutlined />, label: 'Cài đặt tài khoản' },
-          
+
         ],
       },
       {
@@ -146,7 +146,6 @@ const Sidebar = () => {
         { key: '/landlord/dashboard', icon: <PieChartOutlined />, label: 'Tổng quan' },
         { key: '/landlord/create-room', icon: <HomeOutlined />, label: 'Đăng tin mới' },
         { key: '/landlord/room-list', icon: <UnorderedListOutlined />, label: 'Tin đã đăng' },
-        { key: '/landlord/customers', icon: <TeamOutlined />, label: 'Khách thuê' },
         { key: '/landlord/appointments', icon: <ClockCircleOutlined />, label: 'Lịch hẹn' },
 
         // --- 2. THÊM MỤC TIN NHẮN CHO CHỦ TRỌ ---
@@ -241,7 +240,7 @@ const Sidebar = () => {
           <Avatar size={64} icon={<UserOutlined />} src={user.avatar} className="mb-2" />
           <Text strong className="text-lg">{user.fullName || 'Người dùng'}</Text>
 
-        
+
           {isLandlord && (
             <>
               <Text type="secondary" className="text-xs mb-2">{user.point || 0} điểm</Text>
@@ -263,7 +262,7 @@ const Sidebar = () => {
             </>
           )}
 
-     
+
           {isTenant && (
             <div className="w-full mt-3">
               <div className="bg-orange-50 p-2 rounded border border-orange-200 text-center">

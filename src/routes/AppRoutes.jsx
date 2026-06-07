@@ -41,7 +41,7 @@ import CreateRoom from '../pages/landlord/CreateRoom';
 import MyRooms from '../pages/landlord/MyRooms';
 import AppointmentManagement from '../pages/landlord/AppointmentManagement';
 import LandlordFinance from '../pages/landlord/LandlordFinance';
-import CustomerManagement from '../pages/landlord/CustomerManagement';
+
 import VIPServicePage from '../pages/landlord/LandlordVIP';
 
 // --- ADMIN PAGES ---
@@ -110,7 +110,6 @@ const AppRoutes = () => {
                     <Route path="create-room" element={<CreateRoom />} />
                     <Route path="room-list" element={<MyRooms />} />
                     <Route path="appointments" element={<AppointmentManagement />} />
-                    <Route path="customers" element={<CustomerManagement />} />
                     <Route path="finance" element={<LandlordFinance />} />
                     <Route path="vip-packages" element={<VIPServicePage />} />
                 </Route>

@@ -32,14 +32,7 @@ const contractService = {
     return true;
   },
 
-  /**
-   * Lấy danh sách khách thuê
-   */
-  getLandlordCustomers: async () => {
-      // Viết trực tiếp "/contracts/landlord/customers" vào đây
-      const response = await axiosClient.get("/contracts/landlord/customers");
-      return response.data;
-  }
+ 
 };
 
 export default contractService;

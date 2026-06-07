@@ -134,12 +134,7 @@ const PublicLayout = () => {
           icon: <HistoryOutlined />,
           onClick: () => navigate('/landlord/room-list')
         },
-        {
-          key: 'my-customers',
-          label: 'Danh sách Khách thuê',
-          icon: <TeamOutlined />,
-          onClick: () => navigate('/landlord/customers')
-        },
+
         {
           key: 'finance',
           label: 'Tài chính & Ví',
@@ -292,7 +287,7 @@ const PublicLayout = () => {
                 <Link to="/login">
                   <Button type="text" className="font-medium hover:bg-gray-100 rounded-full">Đăng nhập</Button>
                 </Link>
-               
+
               </Space>
             )}
           </div>
