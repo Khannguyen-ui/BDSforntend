@@ -33,6 +33,7 @@ import ChatPage from '../pages/common/ChatPage';
 import PaymentSuccess from '../pages/common/PaymentSuccess';
 import PaymentFailed from '../pages/common/PaymentFailed';
 import MyFavorites from '../pages/common/MyFavorites';
+import ProjectDetail from '../pages/common/ProjectDetail';
 
 // --- OWNER PAGES ---
 import LandlordDashboard from '../pages/landlord/LandlordDashboard';
@@ -78,6 +79,7 @@ const AppRoutes = () => {
                 {/* Room detail - public */}
                 <Route path="/rooms/:id" element={<RoomDetail />} />
                 <Route path="/analytics" element={<MarketAnalytics />} />
+                <Route path="/projects/:id" element={<ProjectDetail />} />
             </Route>
 
             {/* ========================================================= */}

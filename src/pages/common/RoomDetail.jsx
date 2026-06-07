@@ -1044,12 +1044,25 @@ const RoomDetail = () => {
 
                         {/* Thông tin chính */}
                         <Card className="shadow-sm border-none mb-4 rounded-lg">
-                            <h1 className="text-xl font-bold text-gray-800 mb-1 uppercase">{room.title}</h1>
+                            <h1 className="text-xl font-bold text-gray-800 mb-2 uppercase">{room.title}</h1>
+
                             {room.projectNameSnapshot && (
-                                <div className="text-sm font-semibold text-blue-600 mb-2">
-                                    Dự án: {room.projectNameSnapshot}
+                                <div className="mb-3">
+                                    <Tag
+                                        color="blue"
+                                        className="rounded-full px-3 py-1 font-semibold border-none bg-blue-50 text-blue-700 cursor-pointer"
+                                        icon={<HomeFilled />}
+                                        onClick={() => {
+                                            if (room.projectId) {
+                                                navigate(`/projects/${room.projectId}`);
+                                            }
+                                        }}
+                                    >
+                                        Thuộc dự án / khu trọ: {room.projectNameSnapshot}
+                                    </Tag>
                                 </div>
                             )}
+
                             <div className="text-sm text-gray-500 mb-4">
                                 {formatEnumLabel(FURNISHING_STATUS_LABELS, room.furnishingStatus)}
                             </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Tag, Space, Tabs, Popconfirm, message, Image, Tooltip } from 'antd';
-import { DeleteOutlined, UndoOutlined, StopOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Tabs, Popconfirm, message, Image, Tooltip, Select } from 'antd';
+import { DeleteOutlined, UndoOutlined, StopOutlined, EyeOutlined, BankOutlined } from '@ant-design/icons';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import { getImageUrl } from '../../utils/imageHelper';
 import dayjs from 'dayjs';
@@ -8,17 +9,27 @@ import dayjs from 'dayjs';
 const { TabPane } = Tabs;
 
 const RoomManagement = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeRooms, setActiveRooms] = useState([]);
   const [trashRooms, setTrashRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(undefined);
+  useEffect(() => {
+    const projectIdFromUrl = searchParams.get('projectId');
+    if (projectIdFromUrl) {
+      setSelectedProjectId(Number(projectIdFromUrl));
+    }
+  }, [searchParams]);
 
   // Fetch dữ liệu tin đang hoạt động
   const fetchActiveRooms = async () => {
     setLoading(true);
     try {
       // Lấy danh sách phòng, có thể bỏ status để lấy tất cả hoặc lấy những tin KHÔNG TRONG THÙNG RÁC
-      const res = await adminService.getAllProperties(0, 100); 
+      const res = await adminService.getAllProperties(0, 100);
       const data = res.data?.content || res.data?.result || res.data?.data || [];
       setActiveRooms(data);
     } catch (error) {
@@ -26,6 +37,22 @@ const RoomManagement = () => {
       message.error('Lỗi tải danh sách phòng');
     } finally {
       setLoading(false);
+    }
+  };
+  const fetchProjects = async () => {
+    try {
+      const res = await adminService.getAllProjects(0, 100);
+      const raw =
+        res.data?.content ||
+        res.data?.result?.content ||
+        res.data?.result ||
+        res.data ||
+        [];
+
+      setProjects(Array.isArray(raw) ? raw : []);
+    } catch (error) {
+      console.error('Lỗi tải dự án:', error);
+      setProjects([]);
     }
   };
 
@@ -43,6 +70,10 @@ const RoomManagement = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   useEffect(() => {
     if (activeTab === '1') {
@@ -85,7 +116,13 @@ const RoomManagement = () => {
     }
   };
 
-  // --- CỘT CHO TAB "ĐANG HOẠT ĐỘNG" ---
+  const filteredActiveRooms = selectedProjectId
+    ? activeRooms.filter(room => Number(room.projectId) === Number(selectedProjectId))
+    : activeRooms;
+
+  const filteredTrashRooms = selectedProjectId
+    ? trashRooms.filter(room => Number(room.projectId) === Number(selectedProjectId))
+    : trashRooms;
   const activeColumns = [
     {
       title: 'Ảnh',
@@ -93,12 +130,29 @@ const RoomManagement = () => {
       render: (_, record) => {
         const src = getImageUrl(record);
         if (!src || src.includes('via.placeholder.com')) {
-           return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
+          return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
         }
         return <Image src={src} width={80} height={60} className="object-cover rounded" />;
       }
     },
     { title: 'Tiêu đề', dataIndex: 'title', width: 250 },
+    {
+      title: 'Dự án / Khu trọ',
+      dataIndex: 'projectNameSnapshot',
+      width: 220,
+      render: (_, record) => record.projectNameSnapshot ? (
+        <Tag
+          color="blue"
+          icon={<BankOutlined />}
+          className="cursor-pointer"
+          onClick={() => navigate(`/projects/${record.projectId}`)}
+        >
+          {record.projectNameSnapshot}
+        </Tag>
+      ) : (
+        <span className="text-gray-400">Không thuộc dự án</span>
+      )
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
@@ -144,12 +198,24 @@ const RoomManagement = () => {
       render: (_, record) => {
         const src = getImageUrl(record);
         if (!src || src.includes('via.placeholder.com')) {
-           return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
+          return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
         }
         return <Image src={src} width={80} height={60} className="object-cover rounded" opacity={0.5} />;
       }
     },
     { title: 'Tiêu đề (Đã xóa)', dataIndex: 'title', width: 250, render: (t) => <span className="text-gray-400 line-through">{t}</span> },
+    {
+      title: 'Dự án / Khu trọ',
+      dataIndex: 'projectNameSnapshot',
+      width: 220,
+      render: (_, record) => record.projectNameSnapshot ? (
+        <Tag color="blue" icon={<BankOutlined />}>
+          {record.projectNameSnapshot}
+        </Tag>
+      ) : (
+        <span className="text-gray-400">Không thuộc dự án</span>
+      )
+    },
     { title: 'Chủ trọ (ID)', dataIndex: 'ownerId', render: (id) => `ID: ${id}` },
     { title: 'Ngày tạo', dataIndex: 'createdAt', render: (val) => val ? dayjs(val).format('DD/MM/YYYY') : '' },
     {
@@ -186,22 +252,44 @@ const RoomManagement = () => {
         <h2 className="text-2xl font-bold text-gray-800">Quản Lý Tin Đăng</h2>
         <p className="text-gray-500">Xem toàn bộ tin, gỡ bài vi phạm và quản lý thùng rác.</p>
       </div>
+      <div className="mb-4 flex items-center gap-3">
+        <Select
+          allowClear
+          showSearch
+          placeholder="Lọc theo dự án / khu trọ"
+          value={selectedProjectId}
+          onChange={(value) => setSelectedProjectId(value)}
+          optionFilterProp="children"
+          style={{ width: 280 }}
+        >
+          {projects.map(project => (
+            <Select.Option key={project.id} value={project.id}>
+              {project.name}
+            </Select.Option>
+          ))}
+        </Select>
 
+        {selectedProjectId && (
+          <Button onClick={() => setSelectedProjectId(undefined)}>
+            Bỏ lọc
+          </Button>
+        )}
+      </div>
       <Tabs defaultActiveKey="1" onChange={(key) => setActiveTab(key)} type="card">
         <TabPane tab={<span className="font-medium">Tin Đang Hoạt Động</span>} key="1">
-          <Table 
-            dataSource={activeRooms} 
-            columns={activeColumns} 
-            rowKey="id" 
-            loading={loading && activeTab === '1'} 
+          <Table
+            dataSource={filteredActiveRooms}
+            columns={activeColumns}
+            rowKey="id"
+            loading={loading && activeTab === '1'}
           />
         </TabPane>
         <TabPane tab={<span className="font-medium text-red-500"><DeleteOutlined /> Thùng Rác</span>} key="2">
-          <Table 
-            dataSource={trashRooms} 
-            columns={trashColumns} 
-            rowKey="id" 
-            loading={loading && activeTab === '2'} 
+          <Table
+            dataSource={filteredTrashRooms}
+            columns={trashColumns}
+            rowKey="id"
+            loading={loading && activeTab === '2'}
           />
         </TabPane>
       </Tabs>

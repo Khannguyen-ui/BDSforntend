@@ -271,7 +271,7 @@ const CreateRoom = () => {
           content: 'Vui lòng mua gói lượt đăng tin để tiếp tục đăng bài.',
           okText: 'Mua gói ngay',
           cancelText: 'Để sau',
-          onOk: () => navigate('/landlord/vip')
+          onOk: () => navigate('/landlord/vip-packages')
         });
         return;
       }
@@ -321,7 +321,7 @@ const CreateRoom = () => {
           <Form.Item
             name="projectId"
             label="Thuộc dự án / khu trọ"
-            tooltip="Nếu bài đăng thuộc một dự án hoặc khu trọ đã có trong hệ thống, hãy chọn để hệ thống liên kết dữ liệu."
+            tooltip="Nếu bài đăng thuộc một dự án hoặc khu trọ đã có trong hệ thống, hãy chọn để liên kết dữ liệu."
           >
             <Select
               showSearch
@@ -332,9 +332,7 @@ const CreateRoom = () => {
               onChange={(val) => {
                 const proj = projectsList.find(p => p.id === val);
 
-                if (!proj) {
-                  return;
-                }
+                if (!proj) return;
 
                 form.setFieldsValue({
                   address: proj.address || form.getFieldValue('address'),

@@ -24,9 +24,18 @@ const adminService = {
     params: {
       status: 'PENDING',
       page: 0,
-      size: 100 // Lấy tối đa 100 tin đang chờ duyệt
+      size: 100
     }
   }),
+  getAdminProperties: (params = {}) => {
+    return axiosClient.get('/admin/properties', {
+      params: {
+        page: 0,
+        size: 100,
+        ...params
+      }
+    });
+  },
   approveRoom: (id, approved, reason = null) => {
     // Gọi PatchMapping("/{id}/status")
     // Trạng thái chuẩn phải là ACTIVE (Đang hiển thị) chứ không phải APPROVED
@@ -61,7 +70,7 @@ const adminService = {
   restoreProject: (id) => axiosClient.put(`/admin/projects/${id}/restore`),
   hardDeleteProject: (id) => axiosClient.delete(`/admin/projects/${id}/force`),
 
- 
+
   getAllServicePackages: () => axiosClient.get('/api/admin/packages'),
   createServicePackage: (data) => axiosClient.post('/api/admin/packages', data),
   updateServicePackage: (id, data) => axiosClient.put(`/api/admin/packages/${id}`, data),
