@@ -5,10 +5,12 @@ import {
 } from 'antd';
 import {
   DeleteOutlined, UndoOutlined, StopOutlined,
-  PlusOutlined, EditOutlined
+  PlusOutlined, EditOutlined, EyeOutlined, HomeOutlined
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import LocationPicker from '../../components/shared/LocationPicker';
+import roomService from '../../services/roomService';
 import { EnvironmentOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -21,6 +23,8 @@ const ProjectManagement = () => {
   const [trashProjects, setTrashProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
+  const [amenitiesList, setAmenitiesList] = useState([]);
+  const navigate = useNavigate();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,6 +58,23 @@ const ProjectManagement = () => {
       setLoading(false);
     }
   };
+  const fetchAmenities = async () => {
+    try {
+      const res = await roomService.getAllAmenities();
+
+      const raw =
+        res.data?.result ||
+        res.data?.content ||
+        res.data?.data ||
+        res.data ||
+        [];
+
+      setAmenitiesList(Array.isArray(raw) ? raw : []);
+    } catch (error) {
+      console.error('Lỗi tải tiện ích:', error);
+      setAmenitiesList([]);
+    }
+  };
 
   const fetchTrashProjects = async () => {
     setLoading(true);
@@ -76,6 +97,9 @@ const ProjectManagement = () => {
       fetchTrashProjects();
     }
   }, [activeTab]);
+  useEffect(() => {
+    fetchAmenities();
+  }, []);
 
   // --- ACTIONS ---
   const handleSoftDelete = async (id) => {
@@ -126,7 +150,11 @@ const ProjectManagement = () => {
       latitude: record.latitude,
       longitude: record.longitude,
       projectType: record.projectType,
-      amenities: record.amenities || [],
+      amenities: Array.isArray(record.amenities)
+        ? record.amenities
+        : record.amenities
+          ? String(record.amenities).split(',').map(x => x.trim()).filter(Boolean)
+          : [],
     });
     setIsModalOpen(true);
   };
@@ -161,6 +189,21 @@ const ProjectManagement = () => {
       title: 'Hành động',
       render: (_, record) => (
         <Space>
+          <Button
+            icon={<HomeOutlined />}
+            size="small"
+            onClick={() => navigate(`/admin/rooms?projectId=${record.id}`)}
+          >
+            Xem tin
+          </Button>
+
+          <Button
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => navigate(`/projects/${record.id}`)}
+          >
+            Public
+          </Button>
           <Button icon={<EditOutlined />} onClick={() => openEditModal(record)} size="small" type="primary" ghost>
             Sửa
           </Button>
@@ -290,6 +333,7 @@ const ProjectManagement = () => {
             </div>
 
             <LocationPicker
+              key={`${editingId || 'new'}-${form.getFieldValue('latitude') || 10.7769}-${form.getFieldValue('longitude') || 106.7009}`}
               onCoordinatesChange={handleProjectLocationChange}
               initialLat={form.getFieldValue('latitude') || 10.7769}
               initialLng={form.getFieldValue('longitude') || 106.7009}
@@ -310,6 +354,26 @@ const ProjectManagement = () => {
             rules={[{ required: true, message: 'Vui lòng chọn vị trí trên bản đồ!' }]}
           >
             <InputNumber />
+          </Form.Item>
+          <Form.Item
+            name="amenities"
+            label="Tiện ích dự án / khu trọ"
+            tooltip="Danh sách này lấy từ mục Tiện ích trong quản trị master data."
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              size="large"
+              placeholder="Chọn tiện ích đang có..."
+              optionFilterProp="children"
+            >
+              {amenitiesList.map((item) => (
+                <Option key={item.id} value={item.name}>
+                  {item.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả">
