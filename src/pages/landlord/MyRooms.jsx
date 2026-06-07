@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table, Button, Tag, Space, Popconfirm, Typography,
-  Image, Modal, Form, Input, InputNumber, Select, Row, Col, Tabs, Upload, Divider, Tooltip, Switch, App
+  Image, Modal, Form, Input, InputNumber, Select, Row, Col, Tabs, Upload, Tooltip, Switch, App
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, EditOutlined,
   ExclamationCircleOutlined, UploadOutlined, VideoCameraOutlined,
-  HomeOutlined, CompassOutlined, ExpandOutlined, ClockCircleOutlined,
-  RocketOutlined, CheckCircleOutlined, FireFilled, ThunderboltFilled,
+  ClockCircleOutlined, RocketOutlined, CheckCircleOutlined, FireFilled,
   StopOutlined, ReloadOutlined, EyeInvisibleOutlined,
   CheckCircleFilled, UndoOutlined
 } from '@ant-design/icons';
@@ -48,7 +47,7 @@ const MyRooms = () => {
 
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  
+
   const currentVideoUrl = Form.useWatch('videoUrl', form);
 
   // 1. API: Lấy dữ liệu
@@ -59,7 +58,7 @@ const MyRooms = () => {
       const res = await roomService.getMyRooms(user.id);
       console.log("🔥 GET MY ROOMS API RESPONSE:", res.data);
 
-      // Bóc tách siêu cẩn thận:
+
       const rawData = res.data?.content || res.data?.result?.content || res.data?.data?.content || res.data?.result || res.data?.data || res.data;
       const arrayData = Array.isArray(rawData) ? rawData : (rawData?.content || []);
 
@@ -172,7 +171,7 @@ const MyRooms = () => {
       const timestamp = Math.floor(Date.now() / 1000);
       const folder = "homeverse/properties";
       const eager = "c_pad,h_1280,w_720,f_mp4"; // Yêu cầu Cloudinary nén Video
-      const apiSecret = "M8lZ0g_OPg4eLH0qh2BC-zMRaxQ"; 
+      const apiSecret = "M8lZ0g_OPg4eLH0qh2BC-zMRaxQ";
       const apiKey = "448443126664466";
       const cloudName = "dfyrnocnr";
 
@@ -215,9 +214,6 @@ const MyRooms = () => {
     }
   };
 
-  // ============================================================
-  // 🟢 LOGIC MỚI: TỰ ĐỘNG GIA HẠN & ẨN/HIỆN TIN
-  // ============================================================
 
   // Xử lý Bật/Tắt Tự động gia hạn
   const handleAutoRenewChange = async (checked, room) => {
@@ -233,15 +229,12 @@ const MyRooms = () => {
 
   // Xử lý Ẩn Tin / Đăng Lại (Hạ tin)
   const handleStatusToggle = async (room) => {
-    const isHidden = room.status === 'HIDDEN';
-    const newStatus = isHidden ? 'ACTIVE' : 'HIDDEN';
-    const actionText = isHidden ? 'Đăng lại tin' : 'Ẩn tin';
+    const isExpired = room.status === 'EXPIRED' || (room.expiresAt && dayjs().isAfter(dayjs(room.expiresAt)));
 
-    // Nếu đăng lại tin đã hết hạn -> Cảnh báo
-    if (isHidden && room.expirationDate && dayjs().isAfter(dayjs(room.expirationDate))) {
+    if (isExpired) {
       Modal.confirm({
         title: 'Tin đã hết hạn!',
-        content: 'Tin này đã hết hạn hiển thị. Bạn có muốn mua gói Đẩy Tin để đăng lại ngay không?',
+        content: 'Tin này đã hết hạn hiển thị. Bạn cần mua gói Đẩy Tin hoặc gia hạn để đăng lại.',
         okText: 'Đẩy tin ngay',
         cancelText: 'Để sau',
         onOk: () => handleOpenPushModal(room)
@@ -249,8 +242,11 @@ const MyRooms = () => {
       return;
     }
 
+    const isHidden = room.status === 'HIDDEN';
+    const newStatus = isHidden ? 'ACTIVE' : 'HIDDEN';
+    const actionText = isHidden ? 'Đăng lại tin' : 'Ẩn tin';
+
     try {
-      // Gọi API Backend: PUT /api/rooms/{id}/status?status={ACTIVE/HIDDEN}
       await roomService.updateRoomStatus(room.id, newStatus);
       message.success(`Thành công: ${actionText}`);
       fetchMyRooms();
@@ -286,7 +282,7 @@ const MyRooms = () => {
             <span>{pkg?.price?.toLocaleString()} đ</span>
           </div>
           <div className="text-xs text-gray-500 mt-2">
-            * Hệ thống sẽ cộng dồn ngày nếu tin còn hạn.
+            * Nếu tin đang có gói VIP, gói mới sẽ được xếp hàng và tự động kích hoạt sau khi gói hiện tại hết hạn.
           </div>
         </div>
       ),
@@ -304,10 +300,10 @@ const MyRooms = () => {
         } catch (error) {
           console.error("🚨 CHI TIẾT LỖI THANH TOÁN:", error);
           const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || '';
-          const isInsufficient = errorMsg.toLowerCase().includes('số dư') || 
-                                 errorMsg.toLowerCase().includes('không đủ tiền') || 
-                                 errorMsg.toLowerCase().includes('balance') || 
-                                 error.response?.status === 400;
+          const isInsufficient = errorMsg.toLowerCase().includes('số dư') ||
+            errorMsg.toLowerCase().includes('không đủ tiền') ||
+            errorMsg.toLowerCase().includes('balance') ||
+            error.response?.status === 400;
 
           if (isInsufficient) {
             Modal.warning({
@@ -382,7 +378,7 @@ const MyRooms = () => {
   const handleUpdateSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       const doSubmit = async () => {
         setUpdateLoading(true);
         try {
@@ -448,9 +444,9 @@ const MyRooms = () => {
         } finally { setUpdateLoading(false); }
       };
 
-      const isLocationOrTypeChanged = 
-        (values.address !== editingRoom.address) || 
-        (values.propertyType !== editingRoom.propertyType) || 
+      const isLocationOrTypeChanged =
+        (values.address !== editingRoom.address) ||
+        (values.propertyType !== editingRoom.propertyType) ||
         (values.transactionType !== editingRoom.transactionType);
 
       if (isLocationOrTypeChanged) {
@@ -572,14 +568,14 @@ const MyRooms = () => {
       title: 'Giá & Hạn',
       width: 160,
       render: (_, r) => {
-        const isExpired = r.expirationDate && dayjs().isAfter(dayjs(r.expirationDate));
+        const isExpired = r.status === 'EXPIRED' || (r.expiresAt && dayjs().isAfter(dayjs(r.expiresAt)));
         return (
           <div className="text-xs">
             <div className="text-[#f96302] font-bold text-sm">{r.price?.toLocaleString()} đ</div>
             <div className="text-gray-400 mb-1">Cọc: {r.deposit?.toLocaleString()} đ</div>
             <div className="border-t pt-1 mt-1">
               <div className={isExpired ? "text-red-500 font-bold" : "text-green-600"}>
-                HH: {r.expirationDate ? dayjs(r.expirationDate).format('DD/MM/YYYY') : '--'}
+                HH: {r.expiresAt ? dayjs(r.expiresAt).format('DD/MM/YYYY') : '--'}
               </div>
             </div>
             {r.isPromoted && (
@@ -602,7 +598,7 @@ const MyRooms = () => {
             size="small"
             checked={r.autoRenew}
             onChange={(checked) => handleAutoRenewChange(checked, r)}
-            disabled={r.status === 'PENDING' || r.status === 'REJECTED'}
+            disabled={r.status === 'PENDING' || r.status === 'REJECTED' || r.status === 'EXPIRED'}
           />
           <span className="text-[10px] text-gray-400 mt-1">{r.autoRenew ? 'Bật' : 'Tắt'}</span>
         </div>
@@ -626,15 +622,25 @@ const MyRooms = () => {
           </Button>
 
           <div className="flex gap-2 justify-center">
-            {/* 🟢 NÚT ẨN / HIỆN TIN */}
-            <Tooltip title={r.status === 'HIDDEN' ? "Đăng lại tin" : "Ẩn tin tạm thời"}>
-              <Button
-                size="small"
-                icon={r.status === 'HIDDEN' ? <ReloadOutlined /> : <EyeInvisibleOutlined />}
-                onClick={() => handleStatusToggle(r)}
-                className={r.status === 'HIDDEN' ? "text-green-600 border-green-600" : "text-gray-500 border-gray-300"}
-              />
-            </Tooltip>
+            {r.status === 'EXPIRED' ? (
+              <Tooltip title="Tin đã hết hạn, cần gia hạn hoặc đẩy tin">
+                <Button
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  onClick={() => handleOpenPushModal(r)}
+                  className="text-red-500 border-red-300"
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title={r.status === 'HIDDEN' ? "Đăng lại tin" : "Ẩn tin tạm thời"}>
+                <Button
+                  size="small"
+                  icon={r.status === 'HIDDEN' ? <ReloadOutlined /> : <EyeInvisibleOutlined />}
+                  onClick={() => handleStatusToggle(r)}
+                  className={r.status === 'HIDDEN' ? "text-green-600 border-green-600" : "text-gray-500 border-gray-300"}
+                />
+              </Tooltip>
+            )}
 
             <Tooltip title="Sửa tin">
               <Button type="primary" ghost size="small" icon={<EditOutlined />} onClick={() => handleEditClick(r)} />
@@ -704,6 +710,7 @@ const MyRooms = () => {
         { key: 'HIDDEN', label: 'Đã ẩn' },
         { key: 'PENDING', label: 'Chờ duyệt' },
         { key: 'REJECTED', label: 'Bị từ chối' },
+        { key: 'EXPIRED', label: 'Hết hạn' },
         { key: 'TRASH', label: <span className="text-red-500"><DeleteOutlined /> Thùng rác</span> }
       ]} onChange={setFilterStatus} className="mb-4 custom-tabs" />
 
