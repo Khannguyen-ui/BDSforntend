@@ -1,21 +1,14 @@
-// src/pages/landlord/CreateRoom.jsx
 import React, { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Button, Upload, Card, Row, Col, Divider, Tag, Typography, Space, App } from 'antd';
+import { Form, Input, InputNumber, Select, Button, Upload, Card, Row, Col, Divider, Space, App } from 'antd';
 import {
   UploadOutlined, EnvironmentOutlined, VideoCameraOutlined,
-  HomeOutlined, StarFilled, CrownFilled, CheckCircleOutlined
+  HomeOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
 
-// Import Services
 import roomService from '../../services/roomService';
-import useAuth from '../../hooks/useAuth';
-// Import Component Bản đồ
 import LocationPicker from '../../components/shared/LocationPicker';
-import walletService from '../../services/walletService';
 
-// Import data 34 tỉnh
 import provinceData from '../../data/province.json';
 import wardData from '../../data/ward.json';
 
@@ -23,7 +16,7 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const CreateRoom = () => {
-  const { user, refreshProfile } = useAuth();
+
   const { message, modal } = App.useApp();
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -35,9 +28,8 @@ const CreateRoom = () => {
 
   // State dữ liệu danh mục
   const [amenitiesList, setAmenitiesList] = useState([]);
-  const [packagesList, setPackagesList] = useState([]);
   const [projectsList, setProjectsList] = useState([]);
-  const [wallet, setWallet] = useState(null);
+
 
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
@@ -59,18 +51,11 @@ const CreateRoom = () => {
 
   const currentVideoUrl = Form.useWatch('videoUrl', form);
 
-  // KIỂM TRA HỘI VIÊN CÒN HẠN
-  const hasActiveMembership = user?.membershipPackage &&
-    user?.membershipExpiresAt &&
-    dayjs().isBefore(dayjs(user.membershipExpiresAt));
 
-  // Load danh sách tiện ích & gói cước
   useEffect(() => {
     const fetchMasterData = async () => {
       const results = await Promise.allSettled([
         roomService.getAllAmenities(),
-        roomService.getAllPackages(),
-        walletService.getMyWallet(),
         roomService.getPublicProjects()
       ]);
 
@@ -84,38 +69,18 @@ const CreateRoom = () => {
       }
 
       if (results[1].status === 'fulfilled') {
-        const pkgRes = results[1].value;
-        const data = pkgRes.data?.result || pkgRes.data || [];
-        setPackagesList(Array.isArray(data) ? data : []);
-      } else {
-        console.error("Lỗi tải gói cước:", results[1].reason);
-        setPackagesList([]);
-      }
-
-      if (results[2].status === 'fulfilled') {
-        const walletRes = results[2].value;
-        setWallet(walletRes.data?.result || walletRes.data || null);
-      } else {
-        console.error("Lỗi tải ví:", results[2].reason);
-        setWallet(null);
-      }
-
-      if (results[3].status === 'fulfilled') {
-        const projRes = results[3].value;
+        const projRes = results[1].value;
         const projData = projRes.data?.content || projRes.data?.result?.content || projRes.data?.result || projRes.data || [];
         setProjectsList(Array.isArray(projData) ? projData : []);
       } else {
-        console.error("Lỗi tải dự án:", results[3].reason);
+        console.error("Lỗi tải dự án:", results[1].reason);
         setProjectsList([]);
       }
 
-      // Nếu là hội viên, tự động điền ID gói hội viên vào form
-      if (hasActiveMembership) {
-        form.setFieldsValue({ servicePackageId: user.membershipPackage.id });
-      }
+
     };
     fetchMasterData();
-  }, [hasActiveMembership, user, form]);
+  }, []);
 
   const handleLocationChange = (lat, lng, addressData) => {
     form.setFieldsValue({ latitude: lat, longitude: lng });
@@ -207,31 +172,6 @@ const CreateRoom = () => {
   const handleFinish = async (values) => {
     setLoading(true);
     try {
-      // 1. KIỂM TRA: Nếu user chưa có Hội viên và có chọn mua gói -> Phải mua Hội viên TRƯỚC
-      if (!hasActiveMembership && values.servicePackageId && values.servicePackageId !== 'FREE') {
-        try {
-          message.loading({ content: "Đang xử lý thanh toán...", duration: 2 });
-          await roomService.buyMembership(values.servicePackageId);
-          message.success("Nâng cấp gói hội viên thành công!");
-
-          // Cập nhật lại thông tin user để có quota mới
-          if (refreshProfile) await refreshProfile();
-
-          // 🕒 CHỜ ĐỒNG BỘ: Đợi 2 giây để Kafka đồng bộ quota sang Property Service
-          message.loading({ content: "Đang đồng bộ quyền lợi mới...", key: "payment", duration: 2 });
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (payErr) {
-          console.error("Lỗi thanh toán:", payErr);
-
-          const payMsg = payErr.response?.data?.error || payErr.response?.data?.message || "Số dư không đủ hoặc lỗi hệ thống";
-          modal.error({
-            title: 'Thanh toán thất bại',
-            content: `Chi tiết lỗi: ${payMsg}. Vui lòng kiểm tra lại số dư hoặc thử lại sau.`
-          });
-          setLoading(false);
-          return;
-        }
-      }
 
       const imageUrls = fileList
         .filter(f => f.status === 'done')
@@ -309,11 +249,31 @@ const CreateRoom = () => {
 
     } catch (error) {
       console.error("LỖI TỪ BACKEND:", error);
-      let errorMsg = "Xử lý thất bại";
-      if (error.response?.data) {
-        errorMsg = error.response.data.message || (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data) || "Lỗi từ máy chủ";
-      } else if (error.message) {
-        errorMsg = `Lỗi kết nối hoặc hệ thống: ${error.message}`;
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Đăng tin thất bại';
+
+      const lowerMsg = String(errorMsg).toLowerCase();
+
+      const isQuotaError =
+        lowerMsg.includes('quota') ||
+        lowerMsg.includes('lượt đăng') ||
+        lowerMsg.includes('hết lượt') ||
+        lowerMsg.includes('post_limit') ||
+        lowerMsg.includes('post_limit_exceeded');
+
+      if (isQuotaError) {
+        modal.confirm({
+          title: 'Bạn đã hết lượt đăng tin',
+          content: 'Vui lòng mua gói lượt đăng tin để tiếp tục đăng bài.',
+          okText: 'Mua gói ngay',
+          cancelText: 'Để sau',
+          onOk: () => navigate('/landlord/vip')
+        });
+        return;
       }
 
       modal.error({
@@ -358,32 +318,40 @@ const CreateRoom = () => {
         >
           <Divider titlePlacement="left" className="text-blue-600 border-blue-200">1. Thông tin cơ bản</Divider>
 
-          {/* 
-          <Form.Item name="projectId" label="Thuộc Dự án / Khu trọ (Tùy chọn)" tooltip="Chọn dự án để tự động điền địa chỉ và tọa độ">
+          <Form.Item
+            name="projectId"
+            label="Thuộc dự án / khu trọ"
+            tooltip="Nếu bài đăng thuộc một dự án hoặc khu trọ đã có trong hệ thống, hãy chọn để hệ thống liên kết dữ liệu."
+          >
             <Select
               showSearch
               allowClear
               size="large"
-              placeholder="Gõ để tìm kiếm dự án..."
+              placeholder="Chọn dự án/khu trọ nếu có..."
               optionFilterProp="children"
               onChange={(val) => {
                 const proj = projectsList.find(p => p.id === val);
-                if (proj) {
-                  form.setFieldsValue({
-                    address: proj.address,
-                    latitude: proj.latitude,
-                    longitude: proj.longitude,
-                  });
-                  message.success(`Đã tự động điền vị trí của dự án: ${proj.name}`);
+
+                if (!proj) {
+                  return;
                 }
+
+                form.setFieldsValue({
+                  address: proj.address || form.getFieldValue('address'),
+                  latitude: proj.latitude || form.getFieldValue('latitude'),
+                  longitude: proj.longitude || form.getFieldValue('longitude')
+                });
+
+                message.success(`Đã chọn dự án: ${proj.name}`);
               }}
             >
               {projectsList.map(p => (
-                <Option key={p.id} value={p.id}>{p.name}</Option>
+                <Option key={p.id} value={p.id}>
+                  {p.name} {p.address ? `- ${p.address}` : ''}
+                </Option>
               ))}
             </Select>
           </Form.Item>
-          */}
 
           <Form.Item name="title" label="Tiêu đề tin đăng" rules={[{ required: true, message: "Nhập tiêu đề" }]}>
             <Input placeholder="VD: Phòng trọ cao cấp gần Đại học..." size="large" className="font-semibold rounded-md" />
@@ -608,86 +576,19 @@ const CreateRoom = () => {
             </Upload>
           </Form.Item>
 
-          {/* === 5. DỊCH VỤ ĐĂNG TIN === */}
-          <Divider titlePlacement="left" className="text-orange-600 border-orange-200">5. Dịch vụ đăng tin & Ưu tiên</Divider>
+          <Divider titlePlacement="left" className="text-orange-600 border-orange-200">
+            5. Xác nhận đăng tin
+          </Divider>
 
-          {hasActiveMembership ? (
-            // HIỂN THỊ KHI ĐÃ CÓ GÓI HỘI VIÊN (VIP)
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-200 mb-6 flex items-center justify-between shadow-sm">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CrownFilled className="text-yellow-500 text-2xl" />
-                  <span className="font-bold text-lg text-orange-700">Đặc quyền Hội viên {user.membershipPackage.name}</span>
-                </div>
-                <p className="text-gray-600 m-0 text-sm">
-                  Hệ thống tự động áp dụng ưu tiên tin đăng theo gói hội viên bạn đã mua.
-                  <br /> Thời hạn còn lại: <b className="text-gray-800">{dayjs(user.membershipExpiresAt).format('DD/MM/YYYY')}</b>
-                </p>
-              </div>
-              <Tag color="gold" className="px-4 py-1 font-bold border-none shadow-sm">ĐÃ KÍCH HOẠT</Tag>
-              {/* Hidden field để giữ giá trị package ID khi submit */}
-              <Form.Item name="servicePackageId" hidden><Input /></Form.Item>
-            </div>
-          ) : (
-            // HIỂN THỊ KHI CHƯA CÓ GÓI HỘI VIÊN
-            <div className="bg-orange-50 p-6 rounded-xl border border-orange-100 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-bold text-gray-700">Chọn loại tin đăng</span>
-                {wallet && (
-                  <Tag color="blue" className="px-3 py-1 rounded-full">
-                    <span className="font-medium text-blue-700">
-                      Số dư ví: {Number(wallet.balance || 0).toLocaleString()} đ
-                    </span>
-                  </Tag>
-                )}
-              </div>
-              <Form.Item
-                name="servicePackageId"
-                rules={[{ required: true, message: 'Vui lòng chọn loại tin đăng!' }]}
-                initialValue="FREE"
-              >
-                <Select placeholder="Chọn gói để tăng khả năng tiếp cận khách hàng..." size="large" className="w-full">
-                  <Option key="FREE" value="FREE">
-                    <div className="flex justify-between items-center w-full py-1">
-                      <div className="flex items-center gap-2">
-                        <CheckCircleOutlined className="text-gray-400" />
-                        <span className="font-bold text-gray-600">Đăng tin Thường</span>
-                      </div>
-                      <span className="font-bold text-gray-400">Miễn phí</span>
-                    </div>
-                  </Option>
-                  {packagesList
-                    .filter(p => p.type === 'MEMBERSHIP')
-                    .map(p => {
-                      const isVip = p.type === 'VIP' || p.name.toUpperCase().includes('VIP');
-                      return (
-                        <Option key={p.id} value={p.id}>
-                          <div className="flex justify-between items-center w-full py-1">
-                            <div className="flex items-center gap-2">
-                              {isVip ? <CrownFilled className="text-yellow-500 text-lg" /> : <StarFilled className="text-gray-400" />}
-                              <span className={`font-bold ${isVip ? 'text-orange-600' : 'text-gray-700'}`}>{p.name}</span>
-                            </div>
-                            <span className={`font-bold ${p.price > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                              {p.price === 0 ? "Miễn phí" : `${p.price?.toLocaleString()} đ`}
-                            </span>
-                          </div>
-                        </Option>
-                      );
-                    })}
-                </Select>
-              </Form.Item>
-              <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
-                <Card size="small" className="min-w-[200px] border-orange-200 bg-white">
-                  <div className="text-gray-400 text-xs uppercase font-bold mb-1">Gói Thường</div>
-                  <div className="text-gray-600 text-[11px]"><CheckCircleOutlined className="text-green-500" /> Hiển thị sau tin VIP</div>
-                </Card>
-                <Card size="small" className="min-w-[200px] border-yellow-400 bg-yellow-50 shadow-sm">
-                  <div className="text-yellow-700 text-xs uppercase font-bold mb-1">Gói VIP</div>
-                  <div className="text-gray-700 text-[11px] font-medium"><StarFilled className="text-yellow-500" /> Luôn nằm ở trang đầu</div>
-                </Card>
-              </div>
-            </div>
-          )}
+          <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-6">
+            <p className="m-0 text-sm text-gray-700">
+              Hệ thống sẽ kiểm tra lượt đăng tin còn lại của tài khoản khi bạn gửi bài.
+              Nếu đã hết lượt, bạn sẽ được chuyển sang trang mua gói lượt đăng tin.
+            </p>
+            <p className="m-0 mt-2 text-xs text-gray-500">
+              Sau khi bài được tạo, bạn có thể vào mục “Tin đã đăng” để mua gói đẩy tin/VIP cho từng bài.
+            </p>
+          </div>
 
           <Button
             type="primary"
