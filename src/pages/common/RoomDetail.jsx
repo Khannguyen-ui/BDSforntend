@@ -198,23 +198,18 @@ const RoomDetail = () => {
 
         return total > 0 ? matched / total : 0;
     };
-    const isSameDistrict = (candidate, currentRoom) => {
-        return (
-            normalizeText(candidate?.district) &&
-            normalizeText(candidate?.district) === normalizeText(currentRoom?.district)
-        );
-    };
     const isSameWard = (candidate, currentRoom) => {
-        return (
-            normalizeText(candidate?.ward) &&
-            normalizeText(candidate?.ward) === normalizeText(currentRoom?.ward)
-        );
+        const candidateWard = getValidText(candidate?.ward);
+        const currentWard = getValidText(currentRoom?.ward);
+
+        return candidateWard && currentWard && candidateWard === currentWard;
     };
+
     const isSameProvince = (candidate, currentRoom) => {
-        return (
-            normalizeText(candidate?.province) &&
-            normalizeText(candidate?.province) === normalizeText(currentRoom?.province)
-        );
+        const candidateProvince = getValidText(candidate?.province);
+        const currentProvince = getValidText(currentRoom?.province);
+
+        return candidateProvince && currentProvince && candidateProvince === currentProvince;
     };
     const fetchRoomsBySmartRadius = async (currentRoom) => {
         const steps = [
@@ -247,6 +242,8 @@ const RoomDetail = () => {
                 .filter(r => Number(r.price) > 0)
                 .filter(r => isSameCoreType(r, currentRoom))
                 .filter(r => {
+                    if (isSameProject(r, currentRoom)) return true;
+
                     if (step.areaLevel === 'ward') {
                         return isSameWard(r, currentRoom);
                     }
@@ -576,45 +573,82 @@ const RoomDetail = () => {
         return { province, district, ward };
     };
 
+
+
+
+    const getValidText = (value) => {
+        const text = normalizeText(value);
+        if (!text) return '';
+        if (text === 'không xác định') return '';
+        if (text === 'unknown') return '';
+        if (text === 'null') return '';
+        return text;
+    };
+
+    const isSameProject = (candidate, currentRoom) => {
+        return candidate?.projectId &&
+            currentRoom?.projectId &&
+            String(candidate.projectId) === String(currentRoom.projectId);
+    };
+
     const fetchVideoRooms = async (currentRoomData) => {
         setLoadingVideoRooms(true);
+
         try {
-            const res = await roomService.getVideoRooms({ size: 12 });
+            const res = await roomService.getVideoRooms({ size: 20 });
             const allVideoRooms = res.data?.content || res.data?.items || res.data || [];
 
-            const normalizeText = (value) =>
-                (value || '').toString().trim().toLowerCase();
+            const candidates = allVideoRooms.filter(
+                r => r.id?.toString() !== id?.toString()
+            );
 
-            const filteredAndSorted = allVideoRooms
-                .filter(r => r.id?.toString() !== id?.toString())
-                .filter(r => {
-                    if (!currentRoomData) return true;
+            const currentLocation = extractLocationFromAddress(currentRoomData?.address || '');
 
-                    const reelLocation = extractLocationFromAddress(r.address);
+            const currentWard = getValidText(
+                currentRoomData?.ward || currentLocation.ward
+            );
 
-                    const reelProvince = r.province || reelLocation.province;
-                    const reelDistrict = r.district || reelLocation.district;
+            const currentProvince = getValidText(
+                currentRoomData?.province || currentLocation.province
+            );
 
-                    const currentProvince =
-                        currentRoomData.province ||
-                        extractLocationFromAddress(currentRoomData.address).province;
+            let filteredAndSorted = [];
 
-                    const currentDistrict =
-                        currentRoomData.district ||
-                        extractLocationFromAddress(currentRoomData.address).district;
+            if (currentRoomData?.projectId) {
+                filteredAndSorted = candidates.filter(r =>
+                    isSameProject(r, currentRoomData)
+                );
+            }
 
-                    const sameDistrict =
-                        normalizeText(reelDistrict) &&
-                        normalizeText(reelDistrict) === normalizeText(currentDistrict);
+            if (filteredAndSorted.length === 0 && currentWard) {
+                filteredAndSorted = candidates.filter(r => {
+                    const loc = extractLocationFromAddress(r.address || '');
+                    const ward = getValidText(r.ward || loc.ward);
 
-                    const sameProvince =
-                        normalizeText(reelProvince) &&
-                        normalizeText(reelProvince) === normalizeText(currentProvince);
+                    return ward && ward === currentWard;
+                });
+            }
 
-                    return sameDistrict || sameProvince;
+            if (filteredAndSorted.length === 0 && currentProvince) {
+                filteredAndSorted = candidates.filter(r => {
+                    const loc = extractLocationFromAddress(r.address || '');
+                    const province = getValidText(r.province || loc.province);
+
+                    return province && province === currentProvince;
+                });
+            }
+
+            filteredAndSorted = filteredAndSorted
+                .sort((a, b) => {
+                    const projectA = isSameProject(a, currentRoomData) ? 1 : 0;
+                    const projectB = isSameProject(b, currentRoomData) ? 1 : 0;
+
+                    if (projectA !== projectB) return projectB - projectA;
+
+                    return (b.priorityLevel || 0) - (a.priorityLevel || 0);
                 })
-                .sort((a, b) => (b.priorityLevel || 0) - (a.priorityLevel || 0))
                 .slice(0, 4);
+
             const enrichedRooms = await Promise.all(
                 filteredAndSorted.map(async (item) => {
                     try {
@@ -639,6 +673,7 @@ const RoomDetail = () => {
             setVideoRooms(enrichedRooms);
         } catch (error) {
             console.error("Lỗi khi gọi getVideoRooms:", error);
+            setVideoRooms([]);
         } finally {
             setLoadingVideoRooms(false);
         }
@@ -653,15 +688,30 @@ const RoomDetail = () => {
             const roomPriceTr = Number(activeRoom.price || 0) / 1000000;
 
             // 1. Chỉ gọi API nếu có đủ thông tin địa chính
-            if (activeRoom.province && activeRoom.district) {
+            const locationFromAddress = extractLocationFromAddress(activeRoom.address || '');
+
+            const safeProvince = getValidText(activeRoom.province)
+                ? activeRoom.province
+                : locationFromAddress.province;
+
+            const safeWard = getValidText(activeRoom.ward)
+                ? activeRoom.ward
+                : locationFromAddress.ward;
+
+            const safeDistrict = getValidText(activeRoom.district)
+                ? activeRoom.district
+                : undefined;
+
+            if (safeProvince) {
                 try {
                     const params = {
-                        province: activeRoom.province,
-                        district: activeRoom.district,
-                        ward: activeRoom.ward,
+                        province: safeProvince,
+                        ward: safeWard || undefined,
+                        district: safeWard ? undefined : safeDistrict,
                         propertyType: activeRoom.propertyType,
                         transactionType: activeRoom.transactionType || 'FOR_RENT'
                     };
+
                     const res = await roomService.getPriceTrends(params);
 
                     const rawDataRaw = res.data?.history || res.data?.trendData || res.data;
