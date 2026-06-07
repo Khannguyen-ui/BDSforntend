@@ -113,6 +113,13 @@ const MarketAnalytics = () => {
   }, [provinceOptions, province]);
 
   const handleProvinceChange = (code, option) => {
+    if (!code) {
+      setProvinceCode(undefined);
+      setProvince(undefined);
+      setWard(undefined);
+      return;
+    }
+
     setProvinceCode(code);
     setProvince(option?.name || option?.label);
     setWard(undefined);
@@ -287,13 +294,14 @@ const MarketAnalytics = () => {
               </div>
 
               <Select
+                allowClear
                 showSearch
                 value={provinceCode}
                 onChange={handleProvinceChange}
                 options={provinceOptions}
                 className="w-full h-9"
                 optionFilterProp="label"
-                placeholder="Chọn tỉnh/thành"
+                placeholder="Toàn quốc"
               />
             </Col>
 
