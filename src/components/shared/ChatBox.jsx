@@ -4,9 +4,8 @@ import useAuth from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../config/axiosClient";
 import { useSocket } from "../../contexts/SocketContext";
-import { message } from 'antd';
+import { message } from "antd";
 
-// Quick reply suggestions
 const QUICK_REPLIES = [
   "Tìm phòng trọ dưới 3 triệu",
   "Phòng gần trung tâm Q1",
@@ -14,7 +13,13 @@ const QUICK_REPLIES = [
   "Căn hộ 2 phòng ngủ",
 ];
 
-// Bot avatar icon
+const createWelcomeMessage = () => ({
+  role: "ai",
+  text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠",
+  time: new Date().toISOString(),
+  items: [],
+});
+
 const BotAvatar = () => (
   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm">
     <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
@@ -23,7 +28,6 @@ const BotAvatar = () => (
   </div>
 );
 
-// Typing indicator dots
 const TypingDots = () => (
   <div className="flex items-center gap-1 px-4 py-3 bg-white rounded-2xl rounded-tl-none shadow-sm border border-gray-100 w-fit">
     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce [animation-delay:0ms]" />
@@ -32,7 +36,6 @@ const TypingDots = () => (
   </div>
 );
 
-// Format timestamp
 const formatTime = (date) => {
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
@@ -40,16 +43,18 @@ const formatTime = (date) => {
   }).format(date instanceof Date ? date : new Date(date));
 };
 
-// Property Card Component
 const PropertyCard = ({ item, onClick }) => (
-  <div onClick={onClick} className="flex gap-2 p-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+  <div
+    onClick={onClick}
+    className="flex gap-2 p-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+  >
     {item.imageUrl ? (
       <img
         src={item.imageUrl}
         alt={item.title}
         className="w-14 h-14 object-cover rounded bg-gray-100"
         onError={(e) => {
-          e.target.src = "https://cdn-icons-png.flaticon.com/512/8645/8645899.png";
+          e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/8645/8645899.png";
         }}
       />
     ) : (
@@ -59,15 +64,16 @@ const PropertyCard = ({ item, onClick }) => (
         </svg>
       </div>
     )}
+
     <div className="flex-1 min-w-0">
       <p className="text-xs font-semibold text-gray-800 truncate block">
         {item.title || "Không có tiêu đề"}
       </p>
       <p className="text-xs text-green-600 font-bold mt-0.5">
-        {item.price ? `${item.price.toLocaleString('vi-VN')}đ` : "Liên hệ"}
+        {item.price ? `${item.price.toLocaleString("vi-VN")}đ` : "Liên hệ"}
       </p>
       <p className="text-[10px] text-gray-500 truncate">
-        {item.district || item.province}
+        {item.district || item.province || ""}
       </p>
     </div>
   </div>
@@ -77,19 +83,24 @@ export default function ChatBox() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const nodeRef = useRef(null);
+  const [conversationId, setConversationId] = useState(null);
+  const [messages, setMessages] = useState([createWelcomeMessage()]);
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
+
+  const { user } = useAuth();
   const { aiMessage, resetAiMessage } = useSocket();
+  const navigate = useNavigate();
+
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const aiTimeoutRef = useRef(null);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  // Khởi tạo conversationId duy nhất hoặc lấy lại từ localStorage để AI duy trì ngữ cảnh
-  const [conversationId, setConversationId] = useState(null);
 
   const getConversationStorageKey = useCallback(() => {
     return user?.id ? `ai-conversation-id-${user.id}` : null;
+  }, [user?.id]);
+
+  const getMessagesStorageKey = useCallback(() => {
+    return user?.id ? `chat-messages-${user.id}` : null;
   }, [user?.id]);
 
   const createConversationId = useCallback(() => {
@@ -103,85 +114,77 @@ export default function ChatBox() {
   useEffect(() => {
     if (!user?.id) {
       setConversationId(null);
+      setMessages([createWelcomeMessage()]);
+      setShowQuickReplies(true);
       return;
     }
 
-    const storageKey = `ai-conversation-id-${user.id}`;
-    const savedId = localStorage.getItem(storageKey);
+    const conversationKey = `ai-conversation-id-${user.id}`;
+    const savedConversationId = localStorage.getItem(conversationKey);
 
-    if (savedId) {
-      setConversationId(savedId);
-      return;
+    if (savedConversationId) {
+      setConversationId(savedConversationId);
+    } else {
+      const newId = `user-${user.id}-conv-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      localStorage.setItem(conversationKey, newId);
+      setConversationId(newId);
     }
 
-    const newId = `user-${user.id}-conv-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
+    const messagesKey = `chat-messages-${user.id}`;
+    const savedMessages = localStorage.getItem(messagesKey);
 
-    localStorage.setItem(storageKey, newId);
-    setConversationId(newId);
-  }, [user?.id]);
-
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem("chat-messages");
-    if (saved) {
+    if (savedMessages) {
       try {
-        const parsed = JSON.parse(saved);
-        return parsed.length > 0 ? parsed : [
-          { role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }
-        ];
+        const parsed = JSON.parse(savedMessages);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          setShowQuickReplies(parsed.length <= 1);
+          return;
+        }
       } catch {
-        return [{ role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
+        localStorage.removeItem(messagesKey);
       }
     }
-    return [{ role: "ai", text: "Chào bạn 👋 Mình là **Homeveres AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠", time: new Date().toISOString(), items: [] }];
-  });
 
-  const [showQuickReplies, setShowQuickReplies] = useState(() => {
-    const saved = localStorage.getItem("chat-messages");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 1) return false;
-      } catch { }
-    }
-    return true;
-  });
-
+    setMessages([createWelcomeMessage()]);
+    setShowQuickReplies(true);
+  }, [user?.id]);
 
   useEffect(() => {
-    localStorage.setItem("chat-messages", JSON.stringify(messages));
-  }, [messages]);
+    const messagesKey = getMessagesStorageKey();
 
-  // Auto scroll on new message and when opened
+    if (!messagesKey) return;
+
+    localStorage.setItem(messagesKey, JSON.stringify(messages));
+  }, [messages, getMessagesStorageKey]);
+
   useEffect(() => {
-    if (open) {
-      setTimeout(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 150); // Timeout để đảm bảo DOM đã render xong chat box
-    }
+    if (!open) return;
+
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
   }, [messages, loading, open]);
 
-  // Focus input when opened
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
+    if (!open) return;
+
+    setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
 
-  // Tự động resize ô nhập liệu khi nội dung thay đổi
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
-    }
+    if (!inputRef.current) return;
+
+    inputRef.current.style.height = "auto";
+    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
   }, [input]);
 
-  // ✅ LẮNG NGHE CÂU TRẢ LỜI BẤT ĐỒNG BỘ TỪ KÊNH WEBSOCKET
   useEffect(() => {
     if (!aiMessage) return;
-
-    //console.log("📥 [WebSocket] Nhận câu trả lời AI:", aiMessage);
 
     if (aiTimeoutRef.current) {
       clearTimeout(aiTimeoutRef.current);
@@ -190,13 +193,10 @@ export default function ChatBox() {
 
     if (aiMessage.conversationId) {
       setConversationId(aiMessage.conversationId);
-      if (aiMessage.conversationId) {
-        setConversationId(aiMessage.conversationId);
 
-        const storageKey = getConversationStorageKey();
-        if (storageKey) {
-          localStorage.setItem(storageKey, aiMessage.conversationId);
-        }
+      const conversationKey = getConversationStorageKey();
+      if (conversationKey) {
+        localStorage.setItem(conversationKey, aiMessage.conversationId);
       }
     }
 
@@ -215,13 +215,27 @@ export default function ChatBox() {
     resetAiMessage();
   }, [aiMessage, resetAiMessage, getConversationStorageKey]);
 
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const requireLogin = useCallback(() => {
+    if (user) return true;
+
+    message.warning("Vui lòng đăng nhập để sử dụng trợ lý AI.");
+    navigate("/login");
+    return false;
+  }, [user, navigate]);
+
   const sendMessage = useCallback(
     async (text) => {
-      if (!user) {
-        message.warning('Vui lòng đăng nhập để sử dụng trợ lý AI.');
-        navigate('/login');
-        return;
-      }
+      if (!requireLogin()) return;
+
       if (!conversationId) {
         message.warning("Đang khởi tạo cuộc trò chuyện, vui lòng thử lại.");
         return;
@@ -235,7 +249,12 @@ export default function ChatBox() {
 
       setMessages((prev) => [
         ...prev,
-        { role: "user", text: msgText, time: new Date().toISOString(), items: [] },
+        {
+          role: "user",
+          text: msgText,
+          time: new Date().toISOString(),
+          items: [],
+        },
       ]);
 
       setLoading(true);
@@ -254,7 +273,9 @@ export default function ChatBox() {
             items: [],
           },
         ]);
+
         setLoading(false);
+        aiTimeoutRef.current = null;
       }, 25000);
 
       try {
@@ -262,8 +283,6 @@ export default function ChatBox() {
           conversationId,
           userMessage: msgText,
         });
-
-        // Không setLoading(false) ở đây, đợi phản hồi WebSocket.
       } catch (error) {
         console.error("Lỗi gửi REST AI Flow:", error);
 
@@ -295,7 +314,7 @@ export default function ChatBox() {
           ...prev,
           {
             role: "ai",
-            text: " Không thể gửi tin nhắn đến trợ lý AI. Vui lòng kiểm tra kết nối mạng và thử lại.",
+            text: "❌ Không thể gửi tin nhắn đến trợ lý AI. Vui lòng kiểm tra kết nối mạng và thử lại.",
             time: new Date().toISOString(),
             items: [],
           },
@@ -304,7 +323,7 @@ export default function ChatBox() {
         setLoading(false);
       }
     },
-    [input, loading, conversationId, user, navigate]
+    [input, loading, conversationId, requireLogin, navigate]
   );
 
   const handleKeyDown = (e) => {
@@ -315,36 +334,40 @@ export default function ChatBox() {
   };
 
   const clearHistory = () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch sử trò chuyện và bắt đầu lại?")) {
-      localStorage.removeItem("chat-messages");
-
-      const storageKey = getConversationStorageKey();
-      if (storageKey) {
-        localStorage.removeItem(storageKey);
-      }
-
-      setMessages([
-        {
-          role: "ai",
-          text: "Chào bạn  Mình là  TRung — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? ",
-          time: new Date().toISOString(),
-          items: [],
-        },
-      ]);
-
-      setShowQuickReplies(true);
-
-      const newId = createConversationId();
-
-      if (newId && storageKey) {
-        setConversationId(newId);
-        localStorage.setItem(storageKey, newId);
-      }
+    if (!window.confirm("Bạn có chắc chắn muốn xóa lịch sử trò chuyện và bắt đầu lại?")) {
+      return;
     }
+
+    const messagesKey = getMessagesStorageKey();
+    if (messagesKey) {
+      localStorage.removeItem(messagesKey);
+    }
+
+    const conversationKey = getConversationStorageKey();
+    if (conversationKey) {
+      localStorage.removeItem(conversationKey);
+    }
+
+    const welcomeMessage = createWelcomeMessage();
+    setMessages([welcomeMessage]);
+    setShowQuickReplies(true);
+
+    const newConversationId = createConversationId();
+
+    if (newConversationId && conversationKey) {
+      setConversationId(newConversationId);
+      localStorage.setItem(conversationKey, newConversationId);
+    }
+  };
+
+  const handleOpen = () => {
+    if (!requireLogin()) return;
+    setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
+
     if (aiTimeoutRef.current) {
       clearTimeout(aiTimeoutRef.current);
       aiTimeoutRef.current = null;
@@ -353,22 +376,13 @@ export default function ChatBox() {
 
   return (
     <>
-      {/* ── Floating Button ── */}
       {!open && (
         <div
           className="fixed z-[99999]"
           style={{ bottom: "28px", right: "28px" }}
         >
           <button
-            onClick={() => {
-              if (!user) {
-                message.warning('Vui lòng đăng nhập để sử dụng trợ lý AI.');
-                navigate('/login');
-                return;
-              }
-
-              setOpen(true);
-            }}
+            onClick={handleOpen}
             className="group relative flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.18)] border-2 border-green-500 hover:scale-110 transition-all duration-300 focus:outline-none"
             aria-label="Mở trợ lý AI"
           >
@@ -378,7 +392,7 @@ export default function ChatBox() {
               alt="AI Bot"
               className="w-11 h-11 relative z-10"
               onError={(e) => {
-                e.target.src = "https://cdn-icons-png.flaticon.com/512/4712/4712035.png";
+                e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/4712/4712035.png";
               }}
             />
             <span className="absolute right-full mr-3 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -389,7 +403,6 @@ export default function ChatBox() {
         </div>
       )}
 
-      {/* ── Chat Window ── */}
       {open && (
         <div
           className="fixed z-[100000] flex flex-col bg-white rounded-2xl overflow-hidden"
@@ -402,7 +415,6 @@ export default function ChatBox() {
             border: "1px solid rgba(0,0,0,0.06)",
           }}
         >
-          {/* ─ Header ─ */}
           <div className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-emerald-700 to-green-500 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-1.5 rounded-full backdrop-blur-sm">
@@ -411,7 +423,7 @@ export default function ChatBox() {
                   className="w-6 h-6"
                   alt="bot"
                   onError={(e) => {
-                    e.target.src = "https://cdn-icons-png.flaticon.com/512/4712/4712035.png";
+                    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/4712/4712035.png";
                   }}
                 />
               </div>
@@ -425,8 +437,8 @@ export default function ChatBox() {
                 </div>
               </div>
             </div>
+
             <div className="flex items-center gap-1">
-              {/* Nút xóa lịch sử */}
               <button
                 onClick={clearHistory}
                 title="Xóa lịch sử trò chuyện"
@@ -436,41 +448,28 @@ export default function ChatBox() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
-              {/* Nút đóng */}
+
               <button
                 onClick={handleClose}
                 title="Đóng ChatBox"
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           </div>
 
-          {/* ─ Messages ─ */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50/80 to-white">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {/* Bot avatar cho AI */}
                 {msg.role === "ai" && <BotAvatar />}
 
                 <div className="flex flex-col max-w-[82%]">
-                  {/* Tin nhắn AI */}
                   {msg.role === "ai" && (
                     <div className="px-4 py-2.5 rounded-2xl rounded-tl-none text-[13px] leading-relaxed shadow-sm bg-white text-gray-800 border border-gray-100 break-words">
                       <ReactMarkdown
@@ -488,12 +487,16 @@ export default function ChatBox() {
                         {msg.text}
                       </ReactMarkdown>
 
-                      {/* ✅ HIỂN THỊ PROPERTY CARDS SAU TIN NHẮN */}
                       {msg.items && msg.items.length > 0 && (
                         <div className="grid grid-cols-1 gap-2 mt-3">
                           {msg.items.slice(0, 3).map((item) => (
-                            <PropertyCard key={item.propertyId} item={item} onClick={() => navigate(`/rooms/${item.propertyId}`)} />
+                            <PropertyCard
+                              key={item.propertyId}
+                              item={item}
+                              onClick={() => navigate(`/rooms/${item.propertyId}`)}
+                            />
                           ))}
+
                           {msg.hasMore && (
                             <div className="text-center mt-1 pt-1 border-t border-gray-100">
                               <button
@@ -512,9 +515,11 @@ export default function ChatBox() {
                     </div>
                   )}
 
-                  {/* Tin nhắn User */}
                   {msg.role === "user" && (
-                    <div className="px-4 py-2.5 rounded-2xl rounded-tr-none text-[13px] leading-relaxed shadow-sm bg-gradient-to-br from-green-500 to-emerald-600 text-white break-words overflow-hidden" style={{ wordBreak: 'break-word' }}>
+                    <div
+                      className="px-4 py-2.5 rounded-2xl rounded-tr-none text-[13px] leading-relaxed shadow-sm bg-gradient-to-br from-green-500 to-emerald-600 text-white break-words overflow-hidden"
+                      style={{ wordBreak: "break-word" }}
+                    >
                       <ReactMarkdown
                         components={{
                           p: ({ node, ...props }) => <p className="mb-1 last:mb-0" {...props} />,
@@ -525,17 +530,17 @@ export default function ChatBox() {
                     </div>
                   )}
 
-                  {/* Timestamp */}
                   {msg.time && (
                     <span
-                      className={`text-[10px] mt-0.5 text-gray-400 ${msg.role === "user" ? "text-right" : "text-left ml-1"
-                        }`}
+                      className={`text-[10px] mt-0.5 text-gray-400 ${
+                        msg.role === "user" ? "text-right" : "text-left ml-1"
+                      }`}
                     >
                       {formatTime(msg.time)}
                     </span>
                   )}
                 </div>
-                {/* User avatar */}
+
                 {msg.role === "user" && (
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                     {user?.avatarUrl ? (
@@ -545,11 +550,7 @@ export default function ChatBox() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="white"
-                        className="w-4 h-4"
-                      >
+                      <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                       </svg>
                     )}
@@ -558,7 +559,6 @@ export default function ChatBox() {
               </div>
             ))}
 
-            {/* Typing indicator */}
             {loading && (
               <div className="flex gap-2 justify-start">
                 <BotAvatar />
@@ -566,7 +566,6 @@ export default function ChatBox() {
               </div>
             )}
 
-            {/* Quick replies */}
             {showQuickReplies && !loading && (
               <div className="pt-1">
                 <p className="text-[10px] text-gray-400 mb-2 ml-9 uppercase tracking-wide">
@@ -589,7 +588,6 @@ export default function ChatBox() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* ─ Input ─ */}
           <div className="p-3 bg-white border-t border-gray-100 flex-shrink-0">
             <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 px-3 py-2 focus-within:border-green-400 focus-within:bg-white transition-all">
               <textarea
@@ -607,21 +605,12 @@ export default function ChatBox() {
                 disabled={!input.trim() || loading}
                 className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
             </div>
+
             <p className="text-center text-[9px] text-gray-400 mt-2 uppercase tracking-widest">
               Powered by SmartRental AI
             </p>
