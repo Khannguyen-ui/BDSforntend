@@ -43,7 +43,15 @@ const Login = () => {
         message.error(success.message);
       }
     } catch (error) {
-      message.error("Lỗi kết nối server.");
+      const status = error.response?.status;
+      const msg = error.response?.data?.message;
+
+      if (status === 401) {
+        message.error('Email hoặc mật khẩu không đúng');
+        return;
+      }
+
+      message.error(msg || 'Đăng nhập thất bại, vui lòng thử lại');
     } finally {
       setLoading(false);
     }

@@ -50,47 +50,84 @@ axiosClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Chỉ thực hiện refresh token khi có lỗi 401 (Hết hạn) và chưa retry bao giờ
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    axiosClient.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
 
-      try {
-        const userSessionId = sessionStorage.getItem('userSessionId');
-        const adminSessionId = sessionStorage.getItem('adminSessionId');
-        
-        let oldToken = adminSessionId 
-          ? sessionStorage.getItem(`${adminSessionId}_accessToken`) 
-          : sessionStorage.getItem(`${userSessionId}_accessToken`);
-
-        if (!oldToken) throw new Error("Không có token để làm mới");
-
-        // GỌI TRỰC TIẾP AXIOS ĐỂ TRÁNH CIRCULAR DEPENDENCY VỚI authService
-        const res = await axios.post('/auth/refresh', null, {
-          headers: {
-            Authorization: `Bearer ${oldToken}`
-          }
-        });
-        
-        const newToken = res.data.result.token;
-
-        // Lưu đè Token mới
-        if (adminSessionId) {
-            sessionStorage.setItem(`${adminSessionId}_accessToken`, newToken);
-        } else if (userSessionId) {
-            sessionStorage.setItem(`${userSessionId}_accessToken`, newToken);
+        if (!originalRequest) {
+          return Promise.reject(error);
         }
 
-        // Cập nhật Token mới vào request bị lỗi và gửi lại
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return axiosClient(originalRequest);
+        const status = error.response?.status;
+        const url = originalRequest.url || '';
 
-      } catch (refreshError) {
-        console.error("Làm mới token thất bại, vui lòng đăng nhập lại!", refreshError);
-        // Có thể bổ sung logic dọn dẹp sessionStorage và redirect về /login ở đây
-        // sessionStorage.clear();
-        // window.location.href = '/login';
-        return Promise.reject(refreshError);
+        const isAuthPublicEndpoint =
+          url.includes('/auth/login') ||
+          url.includes('/auth/register') ||
+          url.includes('/auth/forgot-password') ||
+          url.includes('/auth/reset-password') ||
+          url.includes('/auth/refresh');
+
+        if (status === 401 && isAuthPublicEndpoint) {
+          return Promise.reject(error);
+        }
+
+        if (status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          const adminSessionId = sessionStorage.getItem('adminSessionId');
+          const userSessionId = sessionStorage.getItem('userSessionId');
+
+          const oldToken =
+            (adminSessionId && sessionStorage.getItem(`${adminSessionId}_accessToken`)) ||
+            (userSessionId && sessionStorage.getItem(`${userSessionId}_accessToken`));
+
+          if (!oldToken) {
+            sessionStorage.clear();
+            localStorage.removeItem('token');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+
+            return Promise.reject(error);
+          }
+
+          try {
+            const res = await axios.post('/auth/refresh', null, {
+              headers: {
+                Authorization: `Bearer ${oldToken}`
+              }
+            });
+
+            const newToken = res.data?.result?.token;
+
+            if (!newToken) {
+              throw new Error('Không nhận được token mới');
+            }
+
+            if (adminSessionId) {
+              sessionStorage.setItem(`${adminSessionId}_accessToken`, newToken);
+            } else if (userSessionId) {
+              sessionStorage.setItem(`${userSessionId}_accessToken`, newToken);
+            }
+
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return axiosClient(originalRequest);
+          } catch (refreshError) {
+            sessionStorage.clear();
+            localStorage.removeItem('token');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
       }
-    }
+    );
 
     return Promise.reject(error);
   }
