@@ -294,7 +294,7 @@ const ProjectManagement = () => {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
-        width={700}
+        width={900}
         okText="Lưu lại"
         cancelText="Hủy"
         okButtonProps={{ className: "bg-[#f96302] hover:bg-[#e05a02] border-none" }}
@@ -332,12 +332,14 @@ const ProjectManagement = () => {
               Chọn vị trí dự án trên bản đồ
             </div>
 
-            <LocationPicker
-              key={`${editingId || 'new'}-${form.getFieldValue('latitude') || 10.7769}-${form.getFieldValue('longitude') || 106.7009}`}
-              onCoordinatesChange={handleProjectLocationChange}
-              initialLat={form.getFieldValue('latitude') || 10.7769}
-              initialLng={form.getFieldValue('longitude') || 106.7009}
-            />
+            {isModalOpen && (
+              <LocationPicker
+                key={`${editingId || 'new'}-${form.getFieldValue('latitude') || 10.7769}-${form.getFieldValue('longitude') || 106.7009}`}
+                onCoordinatesChange={handleProjectLocationChange}
+                initialLat={form.getFieldValue('latitude') || 10.7769}
+                initialLng={form.getFieldValue('longitude') || 106.7009}
+              />
+            )}
           </div>
 
           <Form.Item

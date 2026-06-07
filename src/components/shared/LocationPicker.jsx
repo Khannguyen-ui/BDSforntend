@@ -26,11 +26,19 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // 1. Component để Map bay đến vị trí mới
 const MapUpdater = ({ center }) => {
     const map = useMap();
+
     useEffect(() => {
-        if (center) {
-            map.flyTo(center, 16, { animate: true });
-        }
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+
+            if (center) {
+                map.flyTo(center, 16, { animate: true });
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
     }, [center, map]);
+
     return null;
 };
 
@@ -207,7 +215,11 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
             </div>
 
             <div className="h-[350px] rounded-lg border border-gray-300 relative z-0 overflow-hidden shadow-sm">
-                <MapContainer center={position} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <MapContainer
+                    center={position}
+                    zoom={13}
+                    style={{ height: 350, width: '100%' }}
+                >
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; OpenStreetMap contributors'
