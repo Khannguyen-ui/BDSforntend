@@ -133,11 +133,16 @@ const ProjectManagement = () => {
   };
 
   // --- MODAL (THÊM / SỬA) ---
+  form.setFieldsValue({
+    projectType: 'BOARDING_HOUSE',
+    latitude: 10.7769,
+    longitude: 106.7009,
+    amenities: []
+  });
   const openCreateModal = () => {
     setEditingId(null);
     form.resetFields();
-    // Default values
-    form.setFieldsValue({ projectType: 'CHUNG_CU' });
+
     setIsModalOpen(true);
   };
 
@@ -161,17 +166,54 @@ const ProjectManagement = () => {
 
   const handleSave = async (values) => {
     try {
+      const payload = {
+        name: values.name?.trim(),
+        description: values.description?.trim() || '',
+        address: values.address?.trim(),
+        projectType: values.projectType,
+        amenities: Array.isArray(values.amenities) ? values.amenities : [],
+        latitude: values.latitude !== undefined && values.latitude !== null
+          ? Number(values.latitude)
+          : null,
+        longitude: values.longitude !== undefined && values.longitude !== null
+          ? Number(values.longitude)
+          : null,
+      };
+
+      if (!payload.name) {
+        message.error('Vui lòng nhập tên dự án');
+        return;
+      }
+
+      if (!payload.address) {
+        message.error('Vui lòng nhập hoặc chọn địa chỉ dự án');
+        return;
+      }
+
+      if (!payload.latitude || !payload.longitude) {
+        message.error('Vui lòng chọn vị trí dự án trên bản đồ');
+        return;
+      }
+
       if (editingId) {
-        await adminService.updateProject(editingId, values);
+        await adminService.updateProject(editingId, payload);
         message.success('Cập nhật dự án thành công!');
       } else {
-        await adminService.createProject(values);
+        await adminService.createProject(payload);
         message.success('Tạo dự án thành công!');
       }
+
       setIsModalOpen(false);
       fetchActiveProjects();
     } catch (error) {
-      message.error('Lỗi lưu dự án: ' + (error.response?.data?.message || error.message));
+      console.error('Lỗi lưu dự án:', error.response?.data || error);
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+
+      message.error('Lỗi lưu dự án: ' + errorMsg);
     }
   };
 
@@ -307,10 +349,10 @@ const ProjectManagement = () => {
           <div className="flex gap-4">
             <Form.Item name="projectType" label="Loại hình" className="flex-1" rules={[{ required: true }]}>
               <Select size="large">
-                <Option value="CHUNG_CU">Chung cư</Option>
-                <Option value="KHU_TRO">Khu trọ / Dãy trọ</Option>
-                <Option value="BIET_THU">Biệt thự</Option>
-                <Option value="KHAC">Khác</Option>
+                <Option value="BOARDING_HOUSE">Khu trọ / Dãy trọ</Option>
+                <Option value="APARTMENT_COMPLEX">Khu căn hộ / Chung cư</Option>
+                <Option value="VILLA_COMPOUND">Khu biệt thự</Option>
+                <Option value="COMMERCIAL_CENTER">Trung tâm thương mại / Mặt bằng</Option>
               </Select>
             </Form.Item>
           </div>
