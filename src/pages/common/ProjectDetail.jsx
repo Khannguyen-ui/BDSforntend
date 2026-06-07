@@ -53,12 +53,8 @@ const ProjectDetail = () => {
   const fetchProjectRooms = async () => {
     setRoomsLoading(true);
     try {
-      const res = await roomService.getRoomsByProject(id, 0, 20);
-      const data = normalizePageData(res)
-        .filter(r => Number(r.projectId) === Number(id))
-        .filter(r => !r.status || r.status === 'ACTIVE')
-        .filter(r => !r.expiresAt || new Date(r.expiresAt) > new Date());
-
+      const res = await roomService.getPublicPropertiesByProject(id, 0, 20);
+      const data = normalizePageData(res);
       setRooms(data);
     } catch (error) {
       console.error(error);

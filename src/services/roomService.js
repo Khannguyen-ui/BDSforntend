@@ -267,19 +267,16 @@ const roomService = {
   toggleAutoRenew: (roomId, enable) => {
     return axiosClient.put(`/properties/${roomId}/auto-renew`, null, { params: { enable } });
   },
-  
+
   getPublicProjectDetail: (projectId) => {
     return axiosClient.get(`/public/projects/${projectId}`);
   },
 
   getRoomsByProject: (projectId, page = 0, size = 12) => {
-    return axiosClient.get('/search/properties', {
+    return axiosClient.get(`/public/properties/by-project/${projectId}`, {
       params: {
-        projectId,
         page,
-        size,
-        sortBy: 'createdAt',
-        sortDir: 'desc'
+        size
       }
     });
   },
