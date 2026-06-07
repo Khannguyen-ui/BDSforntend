@@ -483,6 +483,7 @@ const FilterPage = () => {
 
   const handleApplyLocation = async (locData) => {
     if (!locData.fullText) return;
+
     appMessage.loading({ content: `Đã chọn vị trí mới`, key: 'geo' });
 
     const newFilters = {
@@ -497,15 +498,9 @@ const FilterPage = () => {
 
     setFilters(newFilters);
 
-    // Update URL
-    const newParams = { locationName: locData.displayName };
-    if (locData.locationCoords) {
-      newParams.lat = locData.locationCoords.lat;
-      newParams.lng = locData.locationCoords.lng;
-      newParams.radius = filters.radius || 20000;
-    }
-    if (locData.province?.name) newParams.province = locData.province.name;
-    const newParams = { locationName: locData.displayName };
+    const newParams = {
+      locationName: locData.displayName
+    };
 
     if (locData.locationCoords) {
       newParams.lat = locData.locationCoords.lat;
@@ -513,11 +508,13 @@ const FilterPage = () => {
       newParams.radius = filters.radius || 20000;
     }
 
-    if (locData.province?.name) newParams.province = locData.province.name;
-    if (locData.ward?.name) newParams.ward = locData.ward.name;
+    if (locData.province?.name) {
+      newParams.province = locData.province.name;
+    }
 
-    // Không set district cho URL mới
-    if (locData.ward?.name) newParams.ward = locData.ward.name;
+    if (locData.ward?.name) {
+      newParams.ward = locData.ward.name;
+    }
 
     setSearchParams(newParams);
 
