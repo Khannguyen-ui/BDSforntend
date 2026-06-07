@@ -36,8 +36,31 @@ const UserProfile = () => {
   const [savedProperties, setSavedProperties] = useState([]);
   const [loadingLiked, setLoadingLiked] = useState(false);
   const [loadingSaved, setLoadingSaved] = useState(false);
+  const clearUserSession = () => {
+    const userSessionId = sessionStorage.getItem('userSessionId');
 
-  // 🟢 HÀM LOG DỮ LIỆU ĐỂ KIỂM TRA
+    if (userSessionId) {
+      sessionStorage.removeItem(`${userSessionId}_accessToken`);
+      sessionStorage.removeItem(`${userSessionId}_refreshToken`);
+      sessionStorage.removeItem(`${userSessionId}_user`);
+      sessionStorage.removeItem(`${userSessionId}_role`);
+    }
+
+    sessionStorage.removeItem('userSessionId');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+  };
+
+
   useEffect(() => {
     console.log("=== DỮ LIỆU USER TỪ BÊN TRONG PROFILE ===", user);
   }, [user]);
@@ -88,7 +111,7 @@ const UserProfile = () => {
   const handleUploadAvatar = async ({ file, onSuccess, onError }) => {
     try {
       const result = await uploadService.uploadImage(file);
-      
+
       // Trích xuất URL chuẩn xác từ response
       let newUrl = result;
       if (typeof result === 'object' && result !== null) {
@@ -149,14 +172,20 @@ const UserProfile = () => {
     }
   };
 
-  // --- XỬ LÝ ĐỔI EMAIL ---
+
   const handleChangeEmail = async (values) => {
     setLoading(true);
     try {
       await authService.changeEmail(values.password, values.newEmail);
-      message.success("Đổi email thành công! Thông tin đã được cập nhật.");
+
+      message.success("Đổi email thành công! Vui lòng đăng nhập lại bằng email mới.");
       setIsEmailModalOpen(false);
-      refreshProfile(); 
+
+      clearUserSession();
+
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 800);
     } catch (error) {
       message.error("Lỗi: " + (error.response?.data?.message || error.message));
     } finally {
@@ -186,8 +215,15 @@ const UserProfile = () => {
         oldPassword: values.currentPassword,
         newPassword: values.newPassword
       });
-      message.success("Đổi mật khẩu thành công!");
+
+      message.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
       passwordForm.resetFields();
+
+      clearUserSession();
+
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 800);
     } catch (error) {
       message.error("Đổi mật khẩu thất bại: " + (error.response?.data?.message || "Mật khẩu hiện tại không đúng"));
     } finally {
@@ -216,16 +252,16 @@ const UserProfile = () => {
       setLoading(true);
       const userSessionId = sessionStorage.getItem('userSessionId');
       let oldToken = sessionStorage.getItem(`${userSessionId}_accessToken`);
-      
+
       if (!oldToken) throw new Error("Không tìm thấy token hiện tại");
 
       const res = await authService.refreshToken(oldToken);
       const newToken = res.data.result.token;
-      
+
       // Cập nhật token và role mới
       sessionStorage.setItem(`${userSessionId}_accessToken`, newToken);
       sessionStorage.setItem(`${userSessionId}_role`, res.data.result.role);
-      
+
       await refreshProfile();
       message.success("Làm mới quyền thành công! Bạn đã cập nhật vai trò mới.");
       window.location.reload();
@@ -248,8 +284,8 @@ const UserProfile = () => {
               Vui lòng làm mới quyền để hệ thống cập nhật vai trò Chủ trọ (Landlord) cho bạn.
             </p>
           </div>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             className="bg-orange-500 hover:bg-orange-600 border-none font-bold"
             onClick={handleRefreshRole}
             loading={loading}
@@ -264,17 +300,17 @@ const UserProfile = () => {
         <div className="relative mb-16">
           {/* Khung chứa Banner có overflow-hidden để bo góc, chiều rộng 100% */}
           <div className="rounded-xl overflow-hidden bg-gray-100 shadow-sm border border-gray-200 w-full">
-            <Upload 
-              showUploadList={false} 
-              customRequest={handleUploadBanner} 
-              className="w-full block" 
+            <Upload
+              showUploadList={false}
+              customRequest={handleUploadBanner}
+              className="w-full block"
               rootClassName="w-full block"
               style={{ width: '100%', display: 'block' }}
             >
               <div className="h-48 w-full group cursor-pointer relative block" style={{ width: '100%' }}>
                 <img src={bannerUrl || "https://placehold.co/1200x300?text=Chưa+có+ảnh+bìa"} className="w-full h-full object-cover block" style={{ width: '100%' }} />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-white font-medium"><CameraOutlined className="mr-2"/> Cập nhật ảnh bìa</span>
+                  <span className="text-white font-medium"><CameraOutlined className="mr-2" /> Cập nhật ảnh bìa</span>
                 </div>
               </div>
             </Upload>
@@ -282,16 +318,16 @@ const UserProfile = () => {
 
           {/* Vùng chứa Avatar nằm đè lên, không bị cắt xén vì relative cha không có overflow-hidden */}
           <div className="absolute -bottom-10 left-8 z-10">
-            <ImgCrop 
-              rotationSlider 
-              aspect={1} 
-              shape="round" 
-              modalTitle="Cắt ảnh đại diện" 
-              modalOk="Xác nhận" 
+            <ImgCrop
+              rotationSlider
+              aspect={1}
+              shape="round"
+              modalTitle="Cắt ảnh đại diện"
+              modalOk="Xác nhận"
               modalCancel="Hủy"
               modalProps={{
-                okButtonProps: { 
-                  style: { backgroundColor: '#f97316', borderColor: '#f97316', color: '#fff' } 
+                okButtonProps: {
+                  style: { backgroundColor: '#f97316', borderColor: '#f97316', color: '#fff' }
                 }
               }}
             >
@@ -395,14 +431,14 @@ const UserProfile = () => {
   );
 
   const renderPropertyCard = (property) => (
-    <div 
-      key={property.id} 
+    <div
+      key={property.id}
       className="flex bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden cursor-pointer mb-4"
       onClick={() => navigate(`/rooms/${property.id}`)}
     >
       <div className="w-1/3 h-32 bg-gray-200 shrink-0">
-        <img 
-          src={property.imageUrl || "https://via.placeholder.com/300x200?text=No+Image"} 
+        <img
+          src={property.imageUrl || "https://via.placeholder.com/300x200?text=No+Image"}
           alt={property.title}
           className="w-full h-full object-cover"
         />
@@ -428,11 +464,11 @@ const UserProfile = () => {
       <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
         <HeartFilled className="text-red-500" /> Bất động sản bạn đã thích ({likedProperties.length})
       </h3>
-      {loadingLiked ? <p className="text-gray-500">Đang tải dữ liệu...</p> : 
+      {loadingLiked ? <p className="text-gray-500">Đang tải dữ liệu...</p> :
         likedProperties.length === 0 ? <p className="text-gray-500 italic">Bạn chưa thích bất động sản nào.</p> :
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {likedProperties.map(renderPropertyCard)}
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {likedProperties.map(renderPropertyCard)}
+          </div>
       }
     </div>
   );
@@ -442,11 +478,11 @@ const UserProfile = () => {
       <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
         <BookFilled className="text-blue-500" /> Bất động sản bạn đã lưu ({savedProperties.length})
       </h3>
-      {loadingSaved ? <p className="text-gray-500">Đang tải dữ liệu...</p> : 
+      {loadingSaved ? <p className="text-gray-500">Đang tải dữ liệu...</p> :
         savedProperties.length === 0 ? <p className="text-gray-500 italic">Bạn chưa lưu bất động sản nào.</p> :
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {savedProperties.map(renderPropertyCard)}
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {savedProperties.map(renderPropertyCard)}
+          </div>
       }
     </div>
   );
@@ -460,8 +496,8 @@ const UserProfile = () => {
           items={[
             { key: '1', label: 'Chỉnh sửa thông tin', children: editInfoTabContent },
             { key: '2', label: 'Cài đặt tài khoản', children: accountSettingsTabContent },
-            { key: '3', label: <span className="flex items-center gap-1"><HeartFilled className="text-red-500"/> Tin đã thích</span>, children: likedTabContent },
-            { key: '4', label: <span className="flex items-center gap-1"><BookFilled className="text-blue-500"/> Tin đã lưu</span>, children: savedTabContent },
+            { key: '3', label: <span className="flex items-center gap-1"><HeartFilled className="text-red-500" /> Tin đã thích</span>, children: likedTabContent },
+            { key: '4', label: <span className="flex items-center gap-1"><BookFilled className="text-blue-500" /> Tin đã lưu</span>, children: savedTabContent },
             { key: '5', label: <span className="flex items-center gap-1">Đăng ký Môi giới <span className="bg-red-500 text-white text-[10px] px-1 rounded ml-1">Mới</span></span>, disabled: true }
           ]}
           size="large"
