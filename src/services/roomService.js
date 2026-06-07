@@ -125,11 +125,10 @@ const roomService = {
     const projectId = params?.projectId || undefined;
     const hasBalcony = params?.hasBalcony !== undefined ? params.hasBalcony : undefined;
     const province = params?.province || undefined;
-    const district = params?.district || undefined;
     const ward = params?.ward || undefined;
 
-    // 2. Chỉ đóng gói ĐÚNG CÁC KEY MÀ BACKEND DTO CỦA SEARCH SERVICE HỖ TRỢ
-    // Tránh gửi cùng lúc (latitude & lat), (transactionTypes & transactionType) gây lỗi 500 Spring Binding
+    const district = ward ? undefined : (params?.district || undefined);
+
     const searchApiParams = {
       page,
       size,

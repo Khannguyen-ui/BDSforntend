@@ -25,13 +25,13 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // 1. Component để Map bay đến vị trí mới
 const MapUpdater = ({ center }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, 16, { animate: true });
-    }
-  }, [center, map]);
-  return null;
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 16, { animate: true });
+        }
+    }, [center, map]);
+    return null;
 };
 
 // Component xử lý click trên bản đồ
@@ -47,41 +47,41 @@ const MapClickHandler = ({ onMapClick }) => {
 
 // 2. Thanh tìm kiếm (Dùng Esri thay vì OSM)
 const SearchControl = ({ onResult }) => {
-  const map = useMap();
+    const map = useMap();
 
-  useEffect(() => {
-    // EsriProvider thường tìm địa chỉ VN tốt hơn Nominatim
-    const provider = new EsriProvider(); 
+    useEffect(() => {
+        // EsriProvider thường tìm địa chỉ VN tốt hơn Nominatim
+        const provider = new EsriProvider();
 
-    const searchControl = new GeoSearchControl({
-      provider: provider,
-      style: 'bar',
-      autoComplete: true, 
-      autoCompleteDelay: 250,
-      showMarker: false, 
-      retainZoomLevel: false,
-      animateZoom: true,
-      keepResult: false,
-      searchLabel: 'Nhập địa chỉ hoặc địa điểm nổi tiếng gần đó...',
-    });
+        const searchControl = new GeoSearchControl({
+            provider: provider,
+            style: 'bar',
+            autoComplete: true,
+            autoCompleteDelay: 250,
+            showMarker: false,
+            retainZoomLevel: false,
+            animateZoom: true,
+            keepResult: false,
+            searchLabel: 'Nhập địa chỉ hoặc địa điểm nổi tiếng gần đó...',
+        });
 
-    map.addControl(searchControl);
+        map.addControl(searchControl);
 
-    const handleShowLocation = (result) => {
-        if (result && result.location) {
-            onResult({ lat: result.location.y, lng: result.location.x });
-        }
-    };
+        const handleShowLocation = (result) => {
+            if (result && result.location) {
+                onResult({ lat: result.location.y, lng: result.location.x });
+            }
+        };
 
-    map.on('geosearch/showlocation', handleShowLocation);
+        map.on('geosearch/showlocation', handleShowLocation);
 
-    return () => {
-        map.removeControl(searchControl);
-        map.off('geosearch/showlocation', handleShowLocation);
-    };
-  }, [map, onResult]);
+        return () => {
+            map.removeControl(searchControl);
+            map.off('geosearch/showlocation', handleShowLocation);
+        };
+    }, [map, onResult]);
 
-  return null;
+    return null;
 };
 
 // 3. Marker Kéo thả
@@ -113,20 +113,43 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
     const updatePosition = async (lat, lng) => {
         const newPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
         setPosition(newPos);
-        
+
         try {
             // Lấy địa chỉ chi tiết từ tọa độ (Reverse Geocoding)
             const res = await axios.get('https://nominatim.openstreetmap.org/reverse', {
                 params: { lat: newPos.lat, lon: newPos.lng, format: 'json', addressdetails: 1, 'accept-language': 'vi' }
             });
-            
+
             if (res.data && res.data.address) {
                 const addr = res.data.address;
+                const province =
+                    addr.city ||
+                    addr.province ||
+                    addr.state ||
+                    '';
+
+                const ward =
+                    addr.village ||
+                    addr.quarter ||
+                    addr.neighbourhood ||
+                    addr.residential ||
+                    addr.suburb ||
+                    addr.town ||
+                    addr.city_district ||
+                    addr.county ||
+                    '';
+
+                const legacyDistrict =
+                    addr.county ||
+                    addr.district ||
+                    addr.city_district ||
+                    '';
+
                 const addressData = {
-                    province: addr.city || addr.province || addr.state || "",
-                    district: addr.county || addr.district || addr.suburb || addr.town || addr.city_district || "",
-                    ward: addr.village || addr.quarter || addr.neighbourhood || addr.residential || "",
-                    street: addr.road || addr.street || "",
+                    province,
+                    ward,
+                    district: legacyDistrict,
+                    street: addr.road || addr.street || '',
                     fullAddress: res.data.display_name
                 };
                 onCoordinatesChange(newPos.lat, newPos.lng, addressData);
@@ -145,9 +168,9 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
             message.error("Trình duyệt không hỗ trợ định vị!");
             return;
         }
-        
+
         message.loading({ content: "Đang lấy vị trí...", key: "loc" });
-        
+
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
@@ -168,13 +191,13 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
                 <div className="text-xs text-gray-500 italic flex-1">
                     * Tìm điểm mốc gần nhà (Trường học, Chợ...) rồi kéo ghim về nhà.
                 </div>
-                
+
                 {/* Nút định vị GPS */}
                 <Tooltip title="Lấy vị trí hiện tại của bạn">
-                    <Button 
-                        type="primary" 
-                        size="small" 
-                        icon={<AimOutlined />} 
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<AimOutlined />}
                         onClick={handleGetCurrentLocation}
                         className="bg-green-600 hover:bg-green-500 border-none shadow-sm"
                     >
@@ -182,26 +205,26 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
                     </Button>
                 </Tooltip>
             </div>
-            
+
             <div className="h-[350px] rounded-lg border border-gray-300 relative z-0 overflow-hidden shadow-sm">
                 <MapContainer center={position} zoom={13} style={{ height: '100%', width: '100%' }}>
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; OpenStreetMap contributors'
                     />
-                    
+
                     <MapUpdater center={position} />
                     <SearchControl onResult={(pos) => updatePosition(pos.lat, pos.lng)} />
                     <MapClickHandler onMapClick={(latlng) => updatePosition(latlng.lat, latlng.lng)} />
-                    
-                    <DraggableMarker 
-                        position={position} 
-                        setPosition={setPosition} 
-                        onLocationChange={(lat, lng) => updatePosition(lat, lng)} 
+
+                    <DraggableMarker
+                        position={position}
+                        setPosition={setPosition}
+                        onLocationChange={(lat, lng) => updatePosition(lat, lng)}
                     />
                 </MapContainer>
             </div>
-            
+
             <div className="mt-2 text-xs text-gray-400 text-right">
                 Tọa độ: {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
             </div>

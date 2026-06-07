@@ -1,57 +1,84 @@
 import axiosClient from '../config/axiosClient';
 
-const recommendService = {
-  // --- Tracking Behaviors ---
-  trackBehavior: async (itemId, itemType, action, metadata = {}) => {
-    // Lấy userId từ session nếu đã đăng nhập, ngược lại dùng guestId
-    let finalUserId = null;
-    const userSessionId = sessionStorage.getItem('userSessionId');
-    if (userSessionId) {
-      finalUserId = sessionStorage.getItem(`${userSessionId}_userId`);
-    }
-    if (!finalUserId) {
-      finalUserId = localStorage.getItem('guestId');
-      if (!finalUserId || isNaN(finalUserId)) {
-         finalUserId = Date.now().toString();
-         localStorage.setItem('guestId', finalUserId);
-      }
-    }
+const normalizeNumber = (value, fallback = 0) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
 
-    return axiosClient.post('/recommend/track', {
-      itemId,
-      itemType,
-      action,
-      userId: finalUserId,
-      duration: metadata.duration || 1.0,
-      watchTime: metadata.watchTime || 0.0,
-      price: metadata.price || 0.0,
-      userBudget: metadata.userBudget || 0.0,
-      locationMatch: metadata.locationMatch || 0,
-      categoryMatch: metadata.categoryMatch || 0,
-      district: metadata.district || ""
-    });
+const getRecommendUserId = () => {
+  const userSessionId = sessionStorage.getItem('userSessionId');
+
+  if (userSessionId) {
+    const sessionUserId = sessionStorage.getItem(`${userSessionId}_userId`);
+    if (sessionUserId && !Number.isNaN(Number(sessionUserId))) {
+      return Number(sessionUserId);
+    }
+  }
+
+  let guestId = localStorage.getItem('guestId');
+
+  if (!guestId || Number.isNaN(Number(guestId))) {
+    guestId = Date.now().toString();
+    localStorage.setItem('guestId', guestId);
+  }
+
+  return Number(guestId);
+};
+
+const normalizeLocationMetadata = (metadata = {}) => {
+  const province = metadata.province || '';
+  const ward = metadata.ward || '';
+
+  return {
+    province,
+    ward,
+    district: ward ? '' : (metadata.district || '')
+  };
+};
+
+const recommendService = {
+  trackBehavior: async (itemId, itemType, action, metadata = {}) => {
+    const location = normalizeLocationMetadata(metadata);
+
+    try {
+      return await axiosClient.post('/recommend/track', {
+        itemId: normalizeNumber(itemId),
+        itemType: itemType || 'PROPERTY',
+        action: action || 'VIEW',
+        userId: getRecommendUserId(),
+        duration: normalizeNumber(metadata.duration, 1.0),
+        watchTime: normalizeNumber(metadata.watchTime, 0.0),
+        price: normalizeNumber(metadata.price, 0.0),
+        userBudget: normalizeNumber(metadata.userBudget, 0.0),
+        locationMatch: normalizeNumber(metadata.locationMatch, 0),
+        categoryMatch: normalizeNumber(metadata.categoryMatch, 0),
+        province: location.province,
+        ward: location.ward,
+        district: location.district
+      });
+    } catch (error) {
+      console.warn('[recommend track ignored]', error.response?.status, error.response?.data || error.message);
+      return null;
+    }
   },
 
-  trackSearch: async (data) => {
-    let finalUserId = null;
-    const userSessionId = sessionStorage.getItem('userSessionId');
-    if (userSessionId) {
-      finalUserId = sessionStorage.getItem(`${userSessionId}_userId`);
+  trackSearch: async (data = {}) => {
+    const location = normalizeLocationMetadata(data);
+
+    try {
+      return await axiosClient.post('/recommend/search/track', {
+        userId: getRecommendUserId(),
+        keyword: data.keyword || '',
+        province: location.province,
+        ward: location.ward,
+        district: location.district,
+        minPrice: normalizeNumber(data.minPrice, 0),
+        maxPrice: normalizeNumber(data.maxPrice, 0)
+      });
+    } catch (error) {
+      console.warn('[recommend search track ignored]', error.response?.status, error.response?.data || error.message);
+      return null;
     }
-    if (!finalUserId) {
-      finalUserId = localStorage.getItem('guestId');
-      if (!finalUserId || isNaN(finalUserId)) {
-         finalUserId = Date.now().toString();
-         localStorage.setItem('guestId', finalUserId);
-      }
-    }
-    return axiosClient.post('/recommend/search/track', {
-      userId: finalUserId,
-      keyword: data.keyword || "",
-      district: data.district || "",
-      minPrice: data.minPrice || 0,
-      maxPrice: data.maxPrice || 0
-    });
   },
 
   getSearchSuggestions: async (keyword) => {
@@ -62,24 +89,23 @@ const recommendService = {
     return axiosClient.get('/recommend/search/top');
   },
 
-  // --- Feeds ---
   getFinalPropertiesFeed: async (userId, page = 0, size = 10, propertyType) => {
     const params = { page, size };
     if (propertyType && propertyType !== 'ALL') {
       params.propertyType = propertyType;
     }
-    return axiosClient.get(`/recommend/users/${userId}/properties/final`, {
+
+    return axiosClient.get(`/recommend/users/${normalizeNumber(userId)}/properties/final`, {
       params
     });
   },
 
   getFinalReelsFeed: async (userId, page = 0, size = 10) => {
-    return axiosClient.get(`/recommend/users/${userId}/reels/final`, {
+    return axiosClient.get(`/recommend/users/${normalizeNumber(userId)}/reels/final`, {
       params: { page, size }
     });
   },
 
-  // --- Admin/Analytics ---
   getDashboard: async () => {
     return axiosClient.get('/recommend/analytics/dashboard');
   },
@@ -100,13 +126,12 @@ const recommendService = {
     return axiosClient.put('/recommend/admin/ranking-config', config);
   },
 
-  // --- User Profiles ---
   getInterestProfile: async (userId) => {
-    return axiosClient.get(`/recommend/users/${userId}/interest-profile`);
+    return axiosClient.get(`/recommend/users/${normalizeNumber(userId)}/interest-profile`);
   },
 
   checkFraudStatus: async (userId) => {
-    return axiosClient.get(`/recommend/users/${userId}/fraud-status`);
+    return axiosClient.get(`/recommend/users/${normalizeNumber(userId)}/fraud-status`);
   }
 };
 

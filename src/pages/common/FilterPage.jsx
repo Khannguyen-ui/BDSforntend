@@ -310,8 +310,7 @@ const FilterPage = () => {
       };
     }
 
-    // 2. Lấy từ location.state (Khi navigate từ trang Home)
-    // 🟢 SỬA LỖI TẠI ĐÂY:
+
     const state = location.state || {}; // Lấy state hoặc rỗng
 
     return {
@@ -416,7 +415,7 @@ const FilterPage = () => {
         radius: activeFilters.radius || undefined,
         // Hành chính
         province: activeFilters.province || undefined,
-        district: activeFilters.district || undefined,
+        district: undefined,
         ward: activeFilters.ward || undefined,
         // Loại phòng (ALL -> không gửi để backend trả hết)
         propertyType: activeFilters.type !== 'ALL' ? activeFilters.type : undefined,
@@ -491,7 +490,7 @@ const FilterPage = () => {
       locationName: locData.displayName,
       locationCoords: locData.locationCoords || null,
       province: locData.province?.name,
-      district: locData.district?.name,
+      district: undefined,
       ward: locData.ward?.name,
       radius: locData.locationCoords ? (filters.radius || 20000) : undefined
     };
@@ -506,7 +505,18 @@ const FilterPage = () => {
       newParams.radius = filters.radius || 20000;
     }
     if (locData.province?.name) newParams.province = locData.province.name;
-    if (locData.district?.name) newParams.district = locData.district.name;
+    const newParams = { locationName: locData.displayName };
+
+    if (locData.locationCoords) {
+      newParams.lat = locData.locationCoords.lat;
+      newParams.lng = locData.locationCoords.lng;
+      newParams.radius = filters.radius || 20000;
+    }
+
+    if (locData.province?.name) newParams.province = locData.province.name;
+    if (locData.ward?.name) newParams.ward = locData.ward.name;
+
+    // Không set district cho URL mới
     if (locData.ward?.name) newParams.ward = locData.ward.name;
 
     setSearchParams(newParams);
@@ -816,8 +826,8 @@ const FilterPage = () => {
               <Button
                 onClick={() => setOpenFilterDrawer(true)}
                 className={`border-none font-medium flex items-center gap-1 rounded-full px-4 transition-colors ${activeFilterCount > 0
-                    ? 'bg-orange-50 text-[#f96302] border border-[#f96302]'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-orange-50 text-[#f96302] border border-[#f96302]'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 <FilterOutlined /> Lọc {activeFilterCount > 0 && `(${activeFilterCount})`}
