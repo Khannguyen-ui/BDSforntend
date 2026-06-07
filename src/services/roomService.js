@@ -83,7 +83,7 @@ const roomService = {
 
   // 5. Master data
   getAllAmenities: () => axiosClient.get('/amenities'),
-  getAllPackages: () => axiosClient.get('/api/admin/packages'),
+  getAllPackages: () => axiosClient.get('/api/admin/packages/active'),
   getPublicProjects: () => axiosClient.get('/public/projects', { params: { page: 0, size: 100 } }),
 
   // 6. Chi tiết phòng (Handle ApiResponse)

@@ -61,11 +61,8 @@ const adminService = {
   restoreProject: (id) => axiosClient.put(`/admin/projects/${id}/restore`),
   hardDeleteProject: (id) => axiosClient.delete(`/admin/projects/${id}/force`),
 
-  // ===== Service Package CRUD (AdminServicePackageController - /api/admin/packages) =====
-  // 🟢 GET: ADMIN + OWNER đều có quyền xem (hasAnyRole)
+ 
   getAllServicePackages: () => axiosClient.get('/api/admin/packages'),
-
-  // 🔴 POST/PUT/DELETE: Chỉ ADMIN
   createServicePackage: (data) => axiosClient.post('/api/admin/packages', data),
   updateServicePackage: (id, data) => axiosClient.put(`/api/admin/packages/${id}`, data),
   deleteServicePackage: (id) => axiosClient.delete(`/api/admin/packages/${id}`),
