@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Input, Button, Card, Row, Col, Tag, Spin, Empty, Select, message,
-  ConfigProvider, Popover,  Typography, Skeleton
+  ConfigProvider, Popover, Typography, Skeleton
 } from 'antd';
 import {
-  SearchOutlined, EnvironmentFilled,  CheckOutlined,
-   DownOutlined, HeartOutlined, RightOutlined,
+  SearchOutlined, EnvironmentFilled, CheckOutlined,
+  DownOutlined, HeartOutlined, RightOutlined,
   HistoryOutlined,
   CloseOutlined, CrownFilled, FireFilled, PlayCircleFilled
 } from '@ant-design/icons';
@@ -18,21 +18,14 @@ import { formatCurrency } from '../../utils/format';
 import searchHistoryService from '../../services/searchHistoryService';
 import axiosClient from '../../config/axiosClient';
 import ReelsViewer from '../../components/modals/ReelsViewer';
+import ProvinceImage from '../../components/common/ProvinceImage';
 
 
 const { Option } = Select;
 const { Title } = Typography;
 
-const REGION_IMAGE_MAP = {
-  'Thành phố Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
-  'Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
-  'Tp Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
-  'Thành phố Hà Nội': 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1000&q=80',
-  'Hà Nội': 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1000&q=80',
-  'Thành phố Đà Nẵng': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1000&q=80',
-  'Đà Nẵng': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1000&q=80',
-  default: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1000&q=80'
-};
+
+
 
 const normalizeTopRegions = (res) => {
   const raw =
@@ -64,7 +57,6 @@ const normalizeTopRegions = (res) => {
         id: name,
         name,
         count,
-        img: REGION_IMAGE_MAP[name] || REGION_IMAGE_MAP.default,
         colSpan: index === 0 ? 2 : 1,
         rowSpan: index === 0 ? 2 : 1
       };
@@ -121,7 +113,7 @@ const HomePage = () => {
 
   const [locationStats, setLocationStats] = useState([]);
   const [locationLoading, setLocationLoading] = useState(false);
-  
+
 
   // State Popover
   const [openLocation, setOpenLocation] = useState(false);
@@ -827,8 +819,8 @@ const HomePage = () => {
                       });
                     }}
                   >
-                    <img
-                      src={loc.img}
+                    <ProvinceImage
+                      provinceName={loc.name}
                       alt={loc.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
