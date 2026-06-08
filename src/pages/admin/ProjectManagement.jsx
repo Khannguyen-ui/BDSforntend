@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   Table, Button, Tag, Space, Tabs, Popconfirm, message, Modal,
-  Form, Input, InputNumber, Select, Tooltip, Upload, Image
+  Form, Input, InputNumber, Select, Tooltip, Upload, Image, Dropdown
 } from 'antd';
 import {
   DeleteOutlined, UndoOutlined, StopOutlined,
   PlusOutlined, EditOutlined, EyeOutlined, HomeOutlined,
-  UploadOutlined, EnvironmentOutlined
+  UploadOutlined, EnvironmentOutlined, MoreOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../../services/adminService';
@@ -291,38 +291,61 @@ const ProjectManagement = () => {
     { title: 'Trạng thái', dataIndex: 'status', render: (status) => <Tag color="green">{status || 'ACTIVE'}</Tag> },
     {
       title: 'Hành động',
+      key: 'actions',
+      width: 170,
+      fixed: 'right',
       render: (_, record) => (
-        <Space>
+        <Space size={6} wrap={false}>
           <Button
             icon={<HomeOutlined />}
             size="small"
             onClick={() => navigate(`/admin/rooms?projectId=${record.id}`)}
           >
-            Xem tin
+            Tin
           </Button>
 
           <Button
-            icon={<EyeOutlined />}
+            icon={<EditOutlined />}
             size="small"
-            onClick={() => navigate(`/projects/${record.id}`)}
+            type="primary"
+            ghost
+            onClick={() => openEditModal(record)}
           >
-            Public
-          </Button>
-          <Button icon={<EditOutlined />} onClick={() => openEditModal(record)} size="small" type="primary" ghost>
             Sửa
           </Button>
-          <Popconfirm
-            title="Xóa dự án này?"
-            description="Dự án sẽ được đưa vào Thùng rác."
-            onConfirm={() => handleSoftDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
+
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'public',
+                  icon: <EyeOutlined />,
+                  label: 'Xem public',
+                  onClick: () => navigate(`/projects/${record.id}`)
+                },
+                {
+                  key: 'delete',
+                  danger: true,
+                  icon: <StopOutlined />,
+                  label: (
+                    <Popconfirm
+                      title="Xóa dự án này?"
+                      description="Dự án sẽ được đưa vào Thùng rác."
+                      onConfirm={() => handleSoftDelete(record.id)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <span>Xóa mềm</span>
+                    </Popconfirm>
+                  )
+                }
+              ]
+            }}
           >
-            <Tooltip title="Xóa mềm">
-              <Button danger icon={<StopOutlined />} size="small">Xóa</Button>
-            </Tooltip>
-          </Popconfirm>
+            <Button size="small" icon={<MoreOutlined />} />
+          </Dropdown>
         </Space>
       )
     }
@@ -397,6 +420,7 @@ const ProjectManagement = () => {
             columns={activeColumns}
             rowKey="id"
             loading={loading && activeTab === '1'}
+            scroll={{ x: 1000 }}
           />
         </TabPane>
         <TabPane tab={<span className="font-medium text-red-500"><DeleteOutlined /> Thùng Rác</span>} key="2">
@@ -405,6 +429,7 @@ const ProjectManagement = () => {
             columns={trashColumns}
             rowKey="id"
             loading={loading && activeTab === '2'}
+            scroll={{ x: 900 }}
           />
         </TabPane>
       </Tabs>
