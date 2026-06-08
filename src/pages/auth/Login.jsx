@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, Divider } from 'antd';
-import { UserOutlined, LockOutlined, HomeFilled, QuestionCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, Divider, App } from 'antd';
+import { UserOutlined, LockOutlined, HomeFilled, QuestionCircleOutlined, GoogleOutlined, FacebookFilled } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
-import { GoogleOutlined, FacebookFilled } from '@ant-design/icons';
-import { App } from 'antd';
+
 const { Title, Text } = Typography;
 
 const Login = () => {
