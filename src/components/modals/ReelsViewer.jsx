@@ -26,7 +26,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const ReelItem = ({ room, isActive, onOpenComments }) => {
+const ReelItem = ({ room, isActive, onOpenComments, user }) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(room.isLiked || false);
@@ -34,6 +34,32 @@ const ReelItem = ({ room, isActive, onOpenComments }) => {
   const [likeCount, setLikeCount] = useState(room.likeCount || 0);
   const [localCommentCount, setLocalCommentCount] = useState(0);
   const navigate = useNavigate();
+  const buildReelMetadata = (room) => ({
+    itemType: 'REEL',
+    duration: 1,
+    watchTime: 1,
+    price: room?.price || 0,
+    userBudget: room?.price || 0,
+    province: room?.province || '',
+    ward: room?.ward || '',
+    district: room?.district || '',
+    locationMatch: room?.district ? 1 : 0,
+    categoryMatch: room?.propertyType ? 1 : 0
+  });
+  useEffect(() => {
+    if (!isActive || !room?.id) return;
+
+    roomService.trackView(room.id);
+
+    if (!user) {
+      recommendService.trackBehavior(
+        room.id,
+        'REEL',
+        'VIEW',
+        buildReelMetadata(room)
+      ).catch(e => console.warn("Recommend REEL VIEW failed:", e));
+    }
+  }, [isActive, room?.id, user]);
 
   useEffect(() => {
     // Fetch comment count
@@ -75,22 +101,30 @@ const ReelItem = ({ room, isActive, onOpenComments }) => {
 
   const handleLike = async (e) => {
     e.stopPropagation();
+
+    const nextLiked = !isLiked;
+
     try {
-      await favoriteService.toggleLike(room.id);
-      setIsLiked(prev => !prev);
-      setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-    } catch {
-      setIsLiked(prev => !prev);
+      await favoriteService.toggleLike(room.id, buildReelMetadata(room));
+      setIsLiked(nextLiked);
+      setLikeCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Lỗi like reel:", error);
+      message.error("Thao tác thất bại");
     }
   };
 
   const handleSave = async (e) => {
     e.stopPropagation();
+
+    const nextSaved = !isSaved;
+
     try {
-      await favoriteService.toggleSave(room.id);
-      setIsSaved(prev => !prev);
-    } catch {
-      setIsSaved(prev => !prev);
+      await favoriteService.toggleSave(room.id, buildReelMetadata(room));
+      setIsSaved(nextSaved);
+    } catch (error) {
+      console.error("Lỗi save reel:", error);
+      message.error("Thao tác thất bại");
     }
   };
 
@@ -286,7 +320,7 @@ const ReelsViewer = ({ isOpen, onClose, initialRoomId = null }) => {
           ]);
           const likedContent = likedRes.data?.content || likedRes.data?.result?.content || likedRes.data || [];
           const savedContent = savedRes.data?.content || savedRes.data?.result?.content || savedRes.data || [];
-          
+
           if (Array.isArray(likedContent)) likedContent.forEach(i => likedRoomIds.add(i.propertyId || i.id));
           if (Array.isArray(savedContent)) savedContent.forEach(i => savedRoomIds.add(i.propertyId || i.id));
         } catch (e) {
@@ -386,7 +420,7 @@ const ReelsViewer = ({ isOpen, onClose, initialRoomId = null }) => {
       }
 
       setComments(fetchedComments);
-      
+
       const realTotal = Math.max(res.data?.totalElements || 0, fetchedComments.length);
       setVideos(prev => prev.map(v => Number(v.id) === Number(roomId) ? { ...v, commentCount: Math.max(Number(v.commentCount || 0), realTotal) } : v));
     } catch (error) {
@@ -494,7 +528,12 @@ const ReelsViewer = ({ isOpen, onClose, initialRoomId = null }) => {
           >
             {videos.map((room, index) => (
               <div key={room.id} className="w-full h-full snap-center">
-                <ReelItem room={room} isActive={index === activeIndex} onOpenComments={handleOpenComments} />
+                <ReelItem
+                  room={room}
+                  isActive={index === activeIndex}
+                  onOpenComments={handleOpenComments}
+                  user={user}
+                />
               </div>
             ))}
           </div>

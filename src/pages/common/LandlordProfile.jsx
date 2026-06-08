@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios'; // ✅ THÊM AXIOS
 import { getImageUrl } from '../../utils/imageHelper';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import {
@@ -30,7 +29,7 @@ dayjs.locale('vi');
 const { Title, Text } = Typography;
 
 const LandlordProfile = () => {
-  const { user: currentUser } = useAuth(); // ✅ LẤY USER HIỆN TẠI
+  const { user: currentUser } = useAuth();
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,16 +87,16 @@ const LandlordProfile = () => {
       try {
         const pageParam = currentPage - 1;
         const transactionTypeParam = activeTab === 'ALL' ? null : activeTab;
-        
+
         const resRooms = await roomService.getRoomsByLandlord(ownerId, pageParam, pageSize, transactionTypeParam);
-        
+
         // Trích xuất dữ liệu cực kỳ linh hoạt
         const resData = resRooms.data;
         const resultObj = resData?.result || resData?.data || resData;
-        
+
         let contentArray = [];
         let totalElements = 0;
-        
+
         if (Array.isArray(resultObj)) {
           contentArray = resultObj;
           totalElements = resultObj.length;
@@ -105,7 +104,7 @@ const LandlordProfile = () => {
           contentArray = resultObj.content || [];
           totalElements = resultObj.totalElements ?? contentArray.length;
         }
-        
+
         setRooms(contentArray);
         setTotalRooms(totalElements);
       } catch (error) {
@@ -217,136 +216,206 @@ const LandlordProfile = () => {
         />
       </div>
 
-      {/* 2. HEADER PROFILE */}
+      {/* 2. HEADER PROFILE - UI nâng cấp */}
       <div className="max-w-6xl mx-auto px-4 mt-2">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+        <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)] border border-white">
 
-          {/* BANNER */}
+          {/* Banner */}
           <div
-            className="h-[250px] w-full bg-cover bg-center relative"
+            className="relative h-[280px] w-full bg-cover bg-center"
             style={{
               backgroundImage: `url('${bannerUrl || profile.bannerUrl || "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop"}')`
             }}
           >
-            <div className="absolute inset-0 bg-black/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10"></div>
+
+            {/* Badge trên banner */}
+            <div className="absolute top-5 left-5 flex flex-wrap items-center gap-2">
+              {isVerified && (
+                <Tag className="m-0 rounded-full border-none bg-blue-500/90 text-white font-bold px-3 py-1 shadow-lg" icon={<IdcardFilled />}>
+                  Đã xác minh eKYC
+                </Tag>
+              )}
+
+              {profile.successfulDeals >= 5 && (
+                <Tag className="m-0 rounded-full border-none bg-yellow-400 text-black font-bold px-3 py-1 shadow-lg" icon={<CrownFilled />}>
+                  Chủ trọ uy tín
+                </Tag>
+              )}
+
+              {isOnline && (
+                <Tag className="m-0 rounded-full border-none bg-green-500/90 text-white font-bold px-3 py-1 shadow-lg">
+                  ● Đang hoạt động
+                </Tag>
+              )}
+            </div>
+
+            {/* Tên nổi trên banner mobile */}
+            <div className="absolute bottom-6 left-6 right-6 md:hidden text-white">
+              <h1 className="text-2xl font-extrabold m-0 drop-shadow-lg">{profile.fullName}</h1>
+              <div className="text-white/80 text-sm mt-1">
+                Tham gia {dayjs(profile.joinDate).format('DD/MM/YYYY')}
+              </div>
+            </div>
           </div>
 
-          {/* INFO USER */}
-          <div className="px-6 pb-6 relative">
-            <div className="flex flex-col md:flex-row items-center md:items-end -mt-16 mb-4 gap-6">
+          {/* Info chính */}
+          <div className="relative px-6 md:px-8 pb-8">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-6 -mt-20">
 
-              <div className="relative z-10 group cursor-pointer">
-                <Avatar
-                  size={140}
-                  src={profile.avatarUrl}
-                  icon={<UserOutlined />}
-                  className="border-[5px] border-white shadow-md bg-white object-cover"
-                />
+              {/* Avatar */}
+              <div className="relative shrink-0 mx-auto lg:mx-0">
+                <div className="relative rounded-full p-1.5 bg-white shadow-2xl">
+                  <Avatar
+                    size={150}
+                    src={profile.avatarUrl}
+                    icon={<UserOutlined />}
+                    className="border-4 border-orange-100 bg-white object-cover"
+                  />
+                </div>
 
                 {isVerified && (
-                  <Tooltip title="Tài khoản đã xác minh (eKYC)">
-                    <div className="absolute bottom-2 right-2 z-30 bg-white rounded-full flex items-center justify-center p-0.5 shadow-sm">
-                      <CheckCircleFilled className="text-blue-500 text-3xl border-2 border-white rounded-full bg-white" />
+                  <Tooltip title="Tài khoản đã xác minh danh tính">
+                    <div className="absolute bottom-4 right-2 z-30 bg-white rounded-full p-1 shadow-md">
+                      <CheckCircleFilled className="text-blue-500 text-3xl" />
                     </div>
                   </Tooltip>
                 )}
 
                 {isOnline && (
                   <Tooltip title="Đang hoạt động">
-                    <div
-                      className={`absolute bottom-2 ${isVerified ? 'right-12' : 'right-4'} bg-green-500 border-4 border-white w-6 h-6 rounded-full z-20`}
-                    ></div>
+                    <div className="absolute bottom-5 left-4 bg-green-500 border-4 border-white w-6 h-6 rounded-full shadow-md"></div>
                   </Tooltip>
                 )}
               </div>
 
-              <div className="flex-grow text-center md:text-left mb-2 md:mb-0">
-                <div className="flex items-center justify-center md:justify-start gap-2">
-                  <Title level={2} style={{ margin: 0, color: '#333' }}>
+              {/* Tên + mô tả */}
+              <div className="flex-1 text-center lg:text-left pt-2">
+                <div className="hidden md:flex items-center justify-center lg:justify-start gap-3 flex-wrap">
+                  <Title level={2} style={{ margin: 0 }} className="!text-gray-900">
                     {profile.fullName}
                   </Title>
-                </div>
 
-                <div className="flex items-center justify-center md:justify-start gap-2 mt-1 mb-2">
                   {isVerified && (
-                    <Tag color="success" icon={<IdcardFilled />}>Đã xác minh</Tag>
-                  )}
-                  {profile.successfulDeals >= 5 && (
-                    <Tag color="gold" icon={<CheckCircleFilled />}>Chủ trọ uy tín</Tag>
+                    <Tooltip title="Đã xác minh">
+                      <CheckCircleFilled className="text-blue-500 text-2xl" />
+                    </Tooltip>
                   )}
                 </div>
 
-                <div className="text-gray-500 flex items-center justify-center md:justify-start gap-2 mt-1 text-sm">
-                  <ClockCircleOutlined /> {getLastActiveText(profile.lastActiveAt)}
-                  <span className="mx-1">|</span>
+                <div className="mt-3 flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                  <Tag color="orange" className="rounded-full px-3 py-1 font-semibold border-none">
+                    Chủ trọ
+                  </Tag>
+
+                  {profile.successfulDeals >= 5 && (
+                    <Tag color="gold" icon={<CrownFilled />} className="rounded-full px-3 py-1 font-semibold border-none">
+                      Uy tín
+                    </Tag>
+                  )}
+
+                  {isVerified && (
+                    <Tag color="blue" icon={<IdcardFilled />} className="rounded-full px-3 py-1 font-semibold border-none">
+                      eKYC
+                    </Tag>
+                  )}
+                </div>
+
+                <div className="mt-3 text-gray-500 flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1 text-sm">
+                  <span className="flex items-center gap-1">
+                    <ClockCircleOutlined />
+                    {getLastActiveText(profile.lastActiveAt)}
+                  </span>
+                  <span className="hidden md:inline text-gray-300">|</span>
                   <span>Tham gia: {dayjs(profile.joinDate).format('DD/MM/YYYY')}</span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap justify-center lg:justify-start gap-2">
+                  {profile.activeDistricts && profile.activeDistricts.length > 0 ? (
+                    profile.activeDistricts.slice(0, 4).map((d, i) => (
+                      <Tag key={i} color="geekblue" className="m-0 rounded-full px-3 py-1 border-none bg-blue-50 text-blue-600 font-medium">
+                        <EnvironmentOutlined /> {d}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Tag className="m-0 rounded-full px-3 py-1 border-none bg-gray-100 text-gray-500 font-medium">
+                      <EnvironmentOutlined /> Toàn quốc
+                    </Tag>
+                  )}
                 </div>
               </div>
 
-              <div className="flex gap-3 mb-4 md:mb-0">
-                {/* ✅ ẨN NÚT NHẮN TIN NẾU LÀ CHÍNH MÌNH */}
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 justify-center lg:justify-end pb-1">
                 {!isOwnProfile && (
-                  <Button size="large" className="rounded-full border-gray-300" onClick={handleStartChat}>
+                  <Button
+                    size="large"
+                    className="h-12 px-7 rounded-full border-gray-200 font-bold shadow-sm hover:border-[#f96302] hover:text-[#f96302]"
+                    onClick={handleStartChat}
+                  >
                     Nhắn tin
                   </Button>
                 )}
-                {/* ----------------------------------- */}
 
-                <Button type="primary" size="large" icon={<PhoneOutlined />} className="bg-[#f96302] hover:bg-orange-600 rounded-full font-bold px-6">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PhoneOutlined />}
+                  className="h-12 px-8 rounded-full bg-[#f96302] hover:bg-orange-600 border-none font-extrabold shadow-lg shadow-orange-200"
+                >
                   Liên hệ
                 </Button>
               </div>
             </div>
 
-            <hr className="border-gray-100 my-4" />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-orange-50/50">
-                <Statistic
-                  title={<span className="text-gray-500 text-xs uppercase font-bold">Đánh giá</span>}
-                  value={profile.averageRating || 0}
-                  precision={1}
-                  suffix="/ 5"
-                  valueStyle={{ color: '#f96302', fontWeight: 'bold' }}
-                  prefix={<Rate disabled defaultValue={1} count={1} className="text-[#f96302] mr-1" />}
-                />
-                <div className="text-xs text-gray-400 mt-1">{profile.totalReviews || 0} lượt</div>
-              </div>
-
-              <div className="text-center p-3 rounded-lg hover:bg-gray-50">
-                <Statistic
-                  title={<span className="text-gray-500 text-xs uppercase font-bold">Giao dịch</span>}
-                  value={profile.successfulDeals || 0}
-                  valueStyle={{ color: '#3f8600' }}
-                  prefix={<SafetyCertificateFilled />}
-                />
-                <div className="text-xs text-gray-400 mt-1">Hợp đồng thành công</div>
-              </div>
-
-              <div className="text-center p-3 rounded-lg hover:bg-gray-50">
-                <Statistic
-                  title={<span className="text-gray-500 text-xs uppercase font-bold">Tổng tin đăng</span>}
-                  value={totalRooms}
-                />
-                <div className="text-xs text-gray-400 mt-1">Phòng trọ</div>
-              </div>
-
-              <div className="text-center p-3 rounded-lg hover:bg-gray-50">
-                <div className="ant-statistic">
-                  <div className="ant-statistic-title text-gray-500 text-xs uppercase font-bold">Khu vực hoạt động</div>
-                  <div className="ant-statistic-content mt-1">
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {profile.activeDistricts && profile.activeDistricts.length > 0 ? (
-                        profile.activeDistricts.slice(0, 2).map((d, i) => (
-                          <Tag key={i} color="geekblue" className="m-0 border-none bg-blue-50 text-blue-600 font-medium">{d}</Tag>
-                        ))
-                      ) : (
-                        <span className="text-sm font-bold text-gray-400">Toàn quốc</span>
-                      )}
-                    </div>
-                  </div>
+            {/* Stats đẹp hơn */}
+            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 p-4 shadow-sm">
+                <div className="absolute -right-4 -top-4 w-16 h-16 bg-orange-100 rounded-full"></div>
+                <div className="text-xs uppercase font-extrabold text-gray-500 mb-2">Đánh giá</div>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-black text-[#f96302]">{Number(profile.averageRating || 0).toFixed(1)}</span>
+                  <span className="text-gray-400 pb-1">/5</span>
                 </div>
-                <div className="text-xs text-gray-400 mt-1">Hoạt động chính</div>
+                <Rate disabled value={1} count={1} className="text-[#f96302] text-sm mt-1" />
+                <div className="text-xs text-gray-400 mt-1">{profile.totalReviews || 0} lượt đánh giá</div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 to-white border border-green-100 p-4 shadow-sm">
+                <div className="absolute -right-4 -top-4 w-16 h-16 bg-green-100 rounded-full"></div>
+                <div className="text-xs uppercase font-extrabold text-gray-500 mb-2">Giao dịch</div>
+                <div className="flex items-center gap-2">
+                  <SafetyCertificateFilled className="text-green-600 text-2xl" />
+                  <span className="text-3xl font-black text-green-600">{profile.successfulDeals || 0}</span>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">Hợp đồng thành công</div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 p-4 shadow-sm">
+                <div className="absolute -right-4 -top-4 w-16 h-16 bg-blue-100 rounded-full"></div>
+                <div className="text-xs uppercase font-extrabold text-gray-500 mb-2">Tin đăng</div>
+                <div className="flex items-center gap-2">
+                  <HomeOutlined className="text-blue-600 text-2xl" />
+                  <span className="text-3xl font-black text-blue-600">{totalRooms}</span>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">Đang công khai trên hệ thống</div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 p-4 shadow-sm">
+                <div className="absolute -right-4 -top-4 w-16 h-16 bg-purple-100 rounded-full"></div>
+                <div className="text-xs uppercase font-extrabold text-gray-500 mb-2">Khu vực</div>
+                <div className="flex flex-wrap gap-1 min-h-[36px] items-center">
+                  {profile.activeDistricts && profile.activeDistricts.length > 0 ? (
+                    profile.activeDistricts.slice(0, 2).map((d, i) => (
+                      <Tag key={i} className="m-0 rounded-full border-none bg-purple-100 text-purple-700 font-bold">
+                        {d}
+                      </Tag>
+                    ))
+                  ) : (
+                    <span className="text-2xl font-black text-purple-600">Toàn quốc</span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400 mt-2">Khu vực hoạt động chính</div>
               </div>
             </div>
           </div>

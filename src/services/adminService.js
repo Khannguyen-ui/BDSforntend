@@ -34,6 +34,9 @@ const adminService = {
         size: 100
       }
     }),
+  getUserQuota: (userId) => {
+    return axiosClient.get(`/admin/properties/users/${userId}/quota`);
+  },
 
   getUserTransactions: (userId) =>
     axiosClient.get(`/api/transactions/my-history/${userId}`),

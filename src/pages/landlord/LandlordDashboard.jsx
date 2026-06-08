@@ -19,7 +19,6 @@ import roomService from '../../services/roomService';
 import appointmentService from '../../services/appointmentService';
 import walletService from '../../services/walletService';
 import notificationService from '../../services/notificationService';
-import favoriteService from '../../services/favoriteService';
 import useAuth from '../../hooks/useAuth';
 
 dayjs.extend(relativeTime);
@@ -41,10 +40,11 @@ const LandlordDashboard = () => {
     const [transactions, setTransactions] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [unreadNotif, setUnreadNotif] = useState(0);
-    // Stats tương tác: đếm từ API liked/saved
+
+
     const [totalLikesFromAPI, setTotalLikesFromAPI] = useState(0);
     const [totalSavesFromAPI, setTotalSavesFromAPI] = useState(0);
-    const [totalViewsFromStorage, setTotalViewsFromStorage] = useState(0);
+    const [totalViewsFromAPI, setTotalViewsFromAPI] = useState(0);
 
     const fetchAll = async () => {
         setLoading(true);
@@ -64,47 +64,27 @@ const LandlordDashboard = () => {
                 roomArr = Array.isArray(raw) ? raw : (raw?.content || raw?.result?.content || []);
             }
             setRooms(roomArr);
-
-            // Đọc lượt xem từ localStorage (key: property_views_{id})
             if (roomArr.length > 0) {
-                const views = roomArr.reduce((sum, r) => {
-                    const v = parseInt(localStorage.getItem(`property_views_${r.id}`) || '0', 10);
-                    return sum + v;
+                const totalViews = roomArr.reduce((sum, r) => {
+                    return sum + Number(r.viewCount ?? r.views ?? r.totalViews ?? 0);
                 }, 0);
-                setTotalViewsFromStorage(views);
+
+                const totalLikes = roomArr.reduce((sum, r) => {
+                    return sum + Number(r.likeCount ?? r.likes ?? r.totalLikes ?? 0);
+                }, 0);
+
+                const totalSaves = roomArr.reduce((sum, r) => {
+                    return sum + Number(r.saveCount ?? r.saves ?? r.totalSaves ?? 0);
+                }, 0);
+
+                setTotalViewsFromAPI(totalViews);
+                setTotalLikesFromAPI(totalLikes);
+                setTotalSavesFromAPI(totalSaves);
+            } else {
+                setTotalViewsFromAPI(0);
+                setTotalLikesFromAPI(0);
+                setTotalSavesFromAPI(0);
             }
-
-            // Tính like/save: đếm số bài của chủ trọ được người khác like/save
-            // Backend không trả về count trong DTO nên phải gọi API liked/saved
-            if (roomArr.length > 0) {
-                const ownerRoomIds = new Set(roomArr.map(r => String(r.id)));
-                try {
-                    // Lấy tất cả bài được like trong hệ thống (size lớn để cover hết)
-                    const [likedRes, savedRes] = await Promise.allSettled([
-                        favoriteService.getMyLikedProperties(0, 1000),
-                        favoriteService.getMySavedProperties(0, 1000),
-                    ]);
-
-                    // Đếm bao nhiêu bài của chủ trọ này được like
-                    if (likedRes.status === 'fulfilled') {
-                        const raw = likedRes.value.data;
-                        const likedItems = raw?.content || raw?.result?.content || (Array.isArray(raw) ? raw : []);
-                        const myLikedCount = likedItems.filter(item => ownerRoomIds.has(String(item.id))).length;
-                        setTotalLikesFromAPI(myLikedCount);
-                    }
-
-                    if (savedRes.status === 'fulfilled') {
-                        const raw = savedRes.value.data;
-                        const savedItems = raw?.content || raw?.result?.content || (Array.isArray(raw) ? raw : []);
-                        const mySavedCount = savedItems.filter(item => ownerRoomIds.has(String(item.id))).length;
-                        setTotalSavesFromAPI(mySavedCount);
-                    }
-                } catch (e) {
-                    console.warn('Lỗi tải số liệu tương tác:', e);
-                }
-            }
-
-            // Appointments
             if (apptRes.status === 'fulfilled') {
                 const raw = apptRes.value.data;
                 const arr = Array.isArray(raw) ? raw : (raw?.content || raw?.result || []);
@@ -144,11 +124,9 @@ const LandlordDashboard = () => {
     const activeRooms = rooms.filter(r => r.status === 'ACTIVE').length;
     const pendingRooms = rooms.filter(r => r.status === 'PENDING').length;
     const promotedRooms = rooms.filter(r => r.isPromoted).length;
-    // Dùng giá trị từ API liked/saved (Backend không trả về count trong DTO danh sách)
     const totalLikes = totalLikesFromAPI;
     const totalSaves = totalSavesFromAPI;
-    // Đọc views từ localStorage (Backend không có API trả về viewCount per property)
-    const totalViews = totalViewsFromStorage;
+    const totalViews = totalViewsFromAPI;
 
     // Lịch hẹn sắp tới (trong 7 ngày)
     const upcomingAppts = appointments
@@ -164,11 +142,13 @@ const LandlordDashboard = () => {
     const holdBalance = wallet?.holdBalance || 0;
     const availableBalance = balance - holdBalance;
 
-    // Tổng nạp trong tháng này
     const thisMonthDeposit = transactions
-        .filter(tx => tx.type === 'DEPOSIT' && tx.status === 'SUCCESS' &&
-            dayjs(tx.createdAt).isSame(dayjs(), 'month'))
-        .reduce((s, tx) => s + (tx.amount || 0), 0);
+        .filter(tx =>
+            getTxType(tx) === 'DEPOSIT' &&
+            ['SUCCESS', 'COMPLETED'].includes(String(tx.status || '').toUpperCase()) &&
+            dayjs(tx.createdAt).isSame(dayjs(), 'month')
+        )
+        .reduce((s, tx) => s + Math.abs(getTxAmount(tx)), 0);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -184,18 +164,40 @@ const LandlordDashboard = () => {
         const map = { ACTIVE: 'Đang hiển thị', PENDING: 'Chờ duyệt', REJECTED: 'Bị từ chối', HIDDEN: 'Đã ẩn' };
         return map[status] || status;
     };
-
-    const getTxColor = (type) => {
-        if (['DEPOSIT', 'REFUND', 'RELEASE'].includes(type)) return '#52c41a';
-        return '#f5222d';
+    const getTxType = (tx) => {
+        return String(tx.transactionType || tx.type || '').toUpperCase();
     };
 
-    const getTxLabel = (type) => {
+    const getTxAmount = (tx) => {
+        return Number(tx.amount || 0);
+    };
+
+    const isPositiveTx = (tx) => {
+        const amount = getTxAmount(tx);
+        const type = getTxType(tx);
+
+        if (amount > 0) return true;
+        if (amount < 0) return false;
+
+        return ['DEPOSIT', 'REFUND', 'RELEASE'].includes(type);
+    };
+    const getTxColor = (tx) => {
+        return isPositiveTx(tx) ? '#52c41a' : '#f5222d';
+    };
+
+    const getTxLabel = (tx) => {
+        const type = getTxType(tx);
+
         const map = {
-            DEPOSIT: 'Nạp tiền', DEBIT: 'Trừ tiền', HOLD: 'Đóng băng',
-            RELEASE: 'Hoàn tiền', PAYMENT_CONFIRMED: 'Thanh toán', REFUND: 'Hoàn lại'
+            DEPOSIT: 'Nạp tiền',
+            DEBIT: 'Trừ tiền',
+            HOLD: 'Đóng băng',
+            RELEASE: 'Hoàn tiền',
+            PAYMENT_CONFIRMED: 'Thanh toán',
+            REFUND: 'Hoàn lại'
         };
-        return map[type] || type;
+
+        return map[type] || type || 'Giao dịch ví';
     };
 
     return (
@@ -483,8 +485,9 @@ const LandlordDashboard = () => {
                                                 description={
                                                     <div className="flex gap-3 text-xs text-gray-400">
                                                         <span><DollarOutlined /> {Number(room.price || 0).toLocaleString()}đ</span>
-                                                        <span><EyeOutlined /> {room.viewCount || 0}</span>
-                                                        <span><HeartOutlined /> {room.likeCount || 0}</span>
+                                                        <span><EyeOutlined /> {room.viewCount ?? room.views ?? 0}</span>
+                                                        <span><HeartOutlined /> {room.likeCount ?? room.likes ?? 0}</span>
+                                                        <span>🔖 {room.saveCount ?? room.saves ?? 0}</span>
                                                     </div>
                                                 }
                                             />
@@ -532,16 +535,16 @@ const LandlordDashboard = () => {
                                         <List.Item className="px-0 py-2">
                                             <List.Item.Meta
                                                 avatar={
-                                                    <Avatar size={32} style={{ backgroundColor: getTxColor(tx.type) }}>
+                                                    <Avatar size={32} style={{ backgroundColor: getTxColor(tx) }}>
                                                         <DollarOutlined />
                                                     </Avatar>
                                                 }
                                                 title={
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-medium">{getTxLabel(tx.type)}</span>
-                                                        <span className="text-xs font-bold" style={{ color: getTxColor(tx.type) }}>
-                                                            {['DEPOSIT', 'REFUND', 'RELEASE'].includes(tx.type) ? '+' : '-'}
-                                                            {Number(tx.amount || 0).toLocaleString()}đ
+                                                        <span className="text-xs font-medium">{getTxLabel(tx)}</span>
+                                                        <span className="text-xs font-bold" style={{ color: getTxColor(tx) }}>
+                                                            {isPositiveTx(tx) ? '+' : '-'}
+                                                            {Math.abs(getTxAmount(tx)).toLocaleString()}đ
                                                         </span>
                                                     </div>
                                                 }

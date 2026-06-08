@@ -34,12 +34,32 @@ const roomService = {
     return { data: contentArray };
   },
 
-  // Theo dõi lượt xem khi user vào xem chi tiết bài
   trackView: async (propertyId) => {
     try {
-      await axiosClient.get(`/public/properties/${propertyId}`);
-    } catch (_) {
-      // Silent fail - không làm phần UI bị hỏng
+      const userSessionId = sessionStorage.getItem('userSessionId');
+      const token = userSessionId ? sessionStorage.getItem(`${userSessionId}_accessToken`) : null;
+
+      const headers = {};
+
+      if (!token) {
+        headers['X-Guest-Id'] = getGuestId();
+      }
+
+      return await axiosClient.post(`/properties/${propertyId}/view`, null, {
+        headers
+      });
+    } catch (error) {
+      console.warn("Track view failed:", error.response?.data || error.message);
+      return null;
+    }
+  },
+
+  contactRoom: async (propertyId) => {
+    try {
+      return await axiosClient.post(`/properties/${propertyId}/contact`);
+    } catch (error) {
+      console.warn("Track contact failed:", error.response?.data || error.message);
+      return null;
     }
   },
 

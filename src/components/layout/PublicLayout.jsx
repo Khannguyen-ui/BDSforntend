@@ -299,10 +299,87 @@ const PublicLayout = () => {
         <Outlet />
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-800 text-white py-8 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p>&copy; 2025 Smart Rental System. All rights reserved.</p>
+      <footer className="relative mt-auto overflow-hidden bg-[#111827] text-white">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f96302]/10 via-transparent to-blue-500/10"></div>
+        <div className="absolute -top-20 -right-20 h-52 w-52 rounded-full bg-[#f96302]/10 blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 py-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+
+            <div className="md:col-span-2">
+              <Link to="/" className="inline-flex items-center gap-2 text-[#f96302] font-extrabold text-2xl hover:text-orange-400">
+                <HomeOutlined /> Homevers
+              </Link>
+
+              <p className="mt-3 text-sm text-gray-300 max-w-md leading-6">
+                Nền tảng tìm phòng, đăng tin và quản lý bất động sản thông minh.
+                Kết nối người thuê với chủ trọ nhanh chóng, minh bạch và an toàn.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Tag className="m-0 rounded-full border-none bg-white/10 text-gray-200 px-3 py-1">
+                  <SafetyCertificateOutlined /> Tin cậy
+                </Tag>
+                <Tag className="m-0 rounded-full border-none bg-white/10 text-gray-200 px-3 py-1">
+                  <TeamOutlined /> Kết nối nhanh
+                </Tag>
+                <Tag className="m-0 rounded-full border-none bg-white/10 text-gray-200 px-3 py-1">
+                  <PlayCircleFilled /> Reels phòng trọ
+                </Tag>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-3">Khám phá</h4>
+              <div className="space-y-2 text-sm">
+                <Link to="/search" className="block text-gray-300 hover:text-[#f96302] transition-colors">
+                  Tìm phòng
+                </Link>
+                <Link to="/analytics" className="block text-gray-300 hover:text-[#f96302] transition-colors">
+                  Góc nhìn thị trường
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsReelsOpen(true)}
+                  className="block text-gray-300 hover:text-[#f96302] transition-colors text-left"
+                >
+                  Lướt video Reels
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-3">Tài khoản</h4>
+              <div className="space-y-2 text-sm">
+                <Link to="/favorites" className="block text-gray-300 hover:text-[#f96302] transition-colors">
+                  Yêu thích & đã lưu
+                </Link>
+                <Link to="/notifications" className="block text-gray-300 hover:text-[#f96302] transition-colors">
+                  Thông báo
+                </Link>
+                <button
+                  type="button"
+                  onClick={handlePostAd}
+                  className="block text-gray-300 hover:text-[#f96302] transition-colors text-left"
+                >
+                  Đăng tin mới
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-5 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-400">
+            <p className="m-0">
+              © 2025 Homevers Smart Rental System. All rights reserved.
+            </p>
+
+            <div className="flex items-center gap-4">
+              <span className="hover:text-[#f96302] transition-colors cursor-default">Điều khoản</span>
+              <span className="hover:text-[#f96302] transition-colors cursor-default">Bảo mật</span>
+              <span className="hover:text-[#f96302] transition-colors cursor-default">Hỗ trợ</span>
+            </div>
+          </div>
         </div>
       </footer>
 

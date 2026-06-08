@@ -131,7 +131,7 @@ const recommendService = {
   },
 
   checkFraudStatus: async (userId) => {
-    return axiosClient.get(`/recommend/users/${normalizeNumber(userId)}/fraud-status`);
+    return axiosClient.get(`/recommend/fraud/users/${normalizeNumber(userId)}`);
   }
 };
 

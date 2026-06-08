@@ -64,6 +64,7 @@ import searchHistoryService from '../../services/searchHistoryService';
 import userService from '../../services/userService';
 import recommendService from '../../services/recommendService';
 
+
 const { Text } = Typography;
 
 // --- 2. FIX LỖI ICON CỦA LEAFLET TRONG REACT ---
@@ -121,7 +122,20 @@ const RoomDetail = () => {
     //dữ liệu biểu đồ
     const [historyChartData, setHistoryChartData] = useState([]);
     const [priceStats, setPriceStats] = useState({ popular: 0, increase: 0, peakPrice: 0 });
-    //so sánh giá khu vực
+
+    const buildRecommendMetadata = (room, itemType = 'PROPERTY') => ({
+        itemType,
+        duration: 1,
+        watchTime: 0,
+        price: room?.price || 0,
+        userBudget: room?.price || 0,
+        province: room?.province || '',
+        ward: room?.ward || '',
+        district: room?.district || '',
+        locationMatch: room?.district ? 1 : 0,
+        categoryMatch: room?.propertyType ? 1 : 0
+    });
+
 
     const [nearbyStats, setNearbyStats] = useState({ avgPrice: 0, diffPercentage: 0, totalNearby: 0 });
 
@@ -390,17 +404,14 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn — không thể thích bài của chính mình!");
             return;
         }
-        if (!user) {
-            message.warning("Vui lòng đăng nhập để yêu thích bài viết!");
-            return;
-        }
+
         setFavLoading(true);
         // Optimistic UI: đảo trạng thái và count người dùng thấy ngay lập tức
         const willLike = !isFavorite;
         setIsFavorite(willLike);
         setLikeCount(prev => willLike ? prev + 1 : Math.max(0, prev - 1));
         try {
-            const res = await favoriteService.toggleLike(id, true);
+            const res = await favoriteService.toggleLike(id, buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY'));
             const responseText = res.data || '';
             const nowLiked = responseText.includes('Like thành công');
             // Đồng bộ lại với phản hồi thật từ server
@@ -439,17 +450,18 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn — không thể lưu bài của chính mình!");
             return;
         }
-        if (!user) {
-            message.warning("Vui lòng đăng nhập để lưu bài viết!");
-            return;
-        }
+      
         setSaveLoading(true);
         // Optimistic UI
         const willSave = !isSaved;
         setIsSaved(willSave);
         setSaveCount(prev => willSave ? prev + 1 : Math.max(0, prev - 1));
         try {
-            const res = await favoriteService.toggleSave(id, true);
+            const res = await favoriteService.toggleSave(
+                id,
+                buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY')
+            );
+
             const responseText = res.data || '';
             const nowSaved = responseText.includes('lưu tin thành công');
             setIsSaved(nowSaved);
@@ -883,9 +895,19 @@ const RoomDetail = () => {
                     const currentViews = parseInt(localStorage.getItem(vKey) || '0', 10);
                     localStorage.setItem(vKey, String(currentViews + 1));
                 } catch (_) { }
-                // Gọi API nếu Backend hỗ trợ
-                // roomService.trackView(id);
-                recommendService.trackBehavior(id, 'PROPERTY', 'VIEW').catch(e => console.warn('Track view failed:', e));
+                roomService.trackView(id);
+
+                if (!user) {
+                    recommendService.trackBehavior(
+                        id,
+                        currentRoomData?.videoUrl ? 'REEL' : 'PROPERTY',
+                        'VIEW',
+                        buildRecommendMetadata(
+                            currentRoomData,
+                            currentRoomData?.videoUrl ? 'REEL' : 'PROPERTY'
+                        )
+                    ).catch(e => console.warn('Track guest view failed:', e));
+                }
                 fetchRecommendations(currentRoomData);
                 //----Ảnh video
                 if (currentRoomData.videoUrl) {
@@ -949,6 +971,14 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn.");
             return;
         }
+        roomService.contactRoom(room.id).catch(() => { });
+
+        recommendService.trackBehavior(
+            room.id,
+            room?.videoUrl ? 'REEL' : 'PROPERTY',
+            'CONTACT',
+            buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY')
+        ).catch(e => console.warn("Recommend CONTACT failed:", e));
         try {
             message.loading({ content: "Đang kết nối...", key: 'chat_loading' });
 
@@ -978,6 +1008,16 @@ const RoomDetail = () => {
     };
 
     const handleZalo = () => {
+        if (room?.id) {
+            roomService.contactRoom(room.id).catch(() => { });
+
+            recommendService.trackBehavior(
+                room.id,
+                room?.videoUrl ? 'REEL' : 'PROPERTY',
+                'CONTACT',
+                buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY')
+            ).catch(e => console.warn("Recommend CONTACT failed:", e));
+        }
 
         const phone = room?.landlordPhone?.replace(/\s/g, '');
         if (phone) {

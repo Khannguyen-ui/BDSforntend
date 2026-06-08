@@ -12,7 +12,7 @@ const RecommendDashboard = () => {
   const [trendingProperties, setTrendingProperties] = useState([]);
   const [trendingReels, setTrendingReels] = useState([]);
   const [rankingConfig, setRankingConfig] = useState(null);
-  
+
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -21,10 +21,12 @@ const RecommendDashboard = () => {
     fetchConfig();
   }, []);
 
+  const unwrap = (res) => res.data?.result || res.data?.data || res.data;
+
   const fetchDashboard = async () => {
     try {
       const res = await recommendService.getDashboard();
-      setDashboardData(res.data);
+      setDashboardData(unwrap(res) || {});
     } catch (error) {
       console.warn("Lỗi tải dashboard:", error);
     }
@@ -36,8 +38,12 @@ const RecommendDashboard = () => {
         recommendService.getTrendingProperties(10),
         recommendService.getTrendingReels(10)
       ]);
-      setTrendingProperties(propsRes.data || []);
-      setTrendingReels(reelsRes.data || []);
+
+      const propsData = unwrap(propsRes);
+      const reelsData = unwrap(reelsRes);
+
+      setTrendingProperties(Array.isArray(propsData) ? propsData : (propsData?.content || []));
+      setTrendingReels(Array.isArray(reelsData) ? reelsData : (reelsData?.content || []));
     } catch (error) {
       console.warn("Lỗi tải trending:", error);
     }
@@ -46,8 +52,9 @@ const RecommendDashboard = () => {
   const fetchConfig = async () => {
     try {
       const res = await recommendService.getRankingConfig();
-      setRankingConfig(res.data);
-      form.setFieldsValue(res.data);
+      const data = unwrap(res);
+      setRankingConfig(data);
+      form.setFieldsValue(data || {});
     } catch (error) {
       console.warn("Lỗi tải cấu hình:", error);
     }
@@ -68,11 +75,33 @@ const RecommendDashboard = () => {
 
   const propertyColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: 'Tiêu đề', dataIndex: 'title', key: 'title', render: (text) => <Text strong>{text || 'Chưa cập nhật'}</Text> },
-    { title: 'Score', dataIndex: 'score', key: 'score', render: (val) => <Text type="success">{(val || 0).toFixed(2)}</Text> },
-    { title: 'Lượt xem', dataIndex: 'views', key: 'views' },
-    { title: 'Lượt thích', dataIndex: 'likes', key: 'likes' },
-    { title: 'Lượt lưu', dataIndex: 'saves', key: 'saves' },
+    {
+      title: 'Tiêu đề',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text) => <Text strong>{text || 'Chưa cập nhật'}</Text>
+    },
+    {
+      title: 'Score',
+      dataIndex: 'score',
+      key: 'score',
+      render: (val) => <Text type="success">{Number(val || 0).toFixed(2)}</Text>
+    },
+    {
+      title: 'Lượt xem',
+      key: 'views',
+      render: (_, record) => record.viewCount ?? record.views ?? record.totalViews ?? 0
+    },
+    {
+      title: 'Lượt thích',
+      key: 'likes',
+      render: (_, record) => record.likeCount ?? record.likes ?? record.totalLikes ?? 0
+    },
+    {
+      title: 'Lượt lưu',
+      key: 'saves',
+      render: (_, record) => record.saveCount ?? record.saves ?? record.totalSaves ?? 0
+    },
   ];
 
   return (
@@ -121,9 +150,9 @@ const RecommendDashboard = () => {
               <Row gutter={[24, 24]}>
                 <Col span={24}>
                   <Card title="Top 10 Bất động sản" className="shadow-sm">
-                    <Table 
-                      dataSource={trendingProperties} 
-                      columns={propertyColumns} 
+                    <Table
+                      dataSource={trendingProperties}
+                      columns={propertyColumns}
                       rowKey="id"
                       pagination={false}
                       size="small"
@@ -132,9 +161,9 @@ const RecommendDashboard = () => {
                 </Col>
                 <Col span={24}>
                   <Card title="Top 10 Reels" className="shadow-sm">
-                    <Table 
-                      dataSource={trendingReels} 
-                      columns={propertyColumns} 
+                    <Table
+                      dataSource={trendingReels}
+                      columns={propertyColumns}
                       rowKey="id"
                       pagination={false}
                       size="small"
@@ -191,7 +220,7 @@ const RecommendDashboard = () => {
                       </Form.Item>
                     </Col>
                   </Row>
-                  
+
                   <Form.Item className="mt-4">
                     <Button type="primary" htmlType="submit" loading={loading} className="bg-[#f96302] border-none font-bold px-8">
                       Lưu Cấu Hình

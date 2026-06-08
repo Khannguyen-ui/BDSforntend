@@ -42,6 +42,8 @@ const UserManagement = () => {
   const navigate = useNavigate();
   const [openedUserIdFromUrl, setOpenedUserIdFromUrl] = useState(null);
 
+  const [userQuota, setUserQuota] = useState(null);
+
   // --- LOAD DỮ LIỆU ---
   const fetchUsers = async () => {
     setLoading(true);
@@ -174,12 +176,14 @@ const UserManagement = () => {
     setUserProperties([]);
     setUserTransactions([]);
     setUserSubscription(null);
+    setUserQuota(null);
 
     try {
-      const [propertiesRes, transactionsRes, subscriptionRes] = await Promise.allSettled([
+      const [propertiesRes, transactionsRes, subscriptionRes, quotaRes] = await Promise.allSettled([
         adminService.getUserProperties(user.id),
         adminService.getUserTransactions(user.id),
-        adminService.getUserSubscriptions(user.id)
+        adminService.getUserSubscriptions(user.id),
+        adminService.getUserQuota(user.id)
       ]);
 
       if (propertiesRes.status === 'fulfilled') {
@@ -193,6 +197,11 @@ const UserManagement = () => {
       if (subscriptionRes.status === 'fulfilled') {
         const data = subscriptionRes.value?.data?.result || subscriptionRes.value?.data;
         setUserSubscription(data || null);
+      }
+
+      if (quotaRes.status === 'fulfilled') {
+        const data = quotaRes.value?.data?.result || quotaRes.value?.data?.data || quotaRes.value?.data;
+        setUserQuota(data || null);
       }
     } catch (error) {
       console.error(error);
@@ -605,7 +614,9 @@ const UserManagement = () => {
                           </Tag>
                         </Descriptions.Item>
                         <Descriptions.Item label="Lượt đăng còn lại">
-                          {selectedUser.freePostsRemaining ?? 0}
+                          <Tag color="orange">
+                            {userQuota?.freePostsRemaining ?? selectedUser.freePostsRemaining ?? 0} tin
+                          </Tag>
                         </Descriptions.Item>
                         <Descriptions.Item label="Ngày tạo">
                           {selectedUser.createdAt ? dayjs(selectedUser.createdAt).format('DD/MM/YYYY HH:mm') : '--'}
