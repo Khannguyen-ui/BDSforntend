@@ -47,10 +47,11 @@ const normalizeTopRegions = (res) => {
         'Khu vực khác';
 
       const count =
-        item.forRentCount ??
+        item.totalPosts ??
         item.count ??
         item.total ??
         item.value ??
+        item.forRentCount ??
         0;
 
       return {
@@ -62,6 +63,18 @@ const normalizeTopRegions = (res) => {
       };
     })
     .filter(item => item.name && item.name !== 'Không xác định');
+};
+const normalizeArrayData = (res) => {
+  const raw =
+    res?.data?.result?.content ||
+    res?.data?.content ||
+    res?.data?.data?.content ||
+    res?.data?.result ||
+    res?.data?.data ||
+    res?.data ||
+    [];
+
+  return Array.isArray(raw) ? raw : [];
 };
 
 
@@ -108,6 +121,9 @@ const HomePage = () => {
   // State Tin Mới Đăng
   const [newListings, setNewListings] = useState([]);
   const [loadingNew, setLoadingNew] = useState(true);
+
+  const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
 
 
 
@@ -165,17 +181,18 @@ const HomePage = () => {
     fetchFeaturedRegions();
   }, []);
 
-  // --- STATE LỊCH SỬ TÌM KIẾM ---
+
   const [historyList, setHistoryList] = useState([]);
   const [showHistory, setShowHistory] = useState(false);;
 
-  // --- STATE TÌM KIẾM NÂNG CAO (AI) ---
+
   const [topSearches, setTopSearches] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
     fetchRooms();
     fetchNewListings();
+    fetchFeaturedProjects();
     fetchHistory();
     fetchTopSearches();
   }, []);
@@ -349,9 +366,19 @@ const HomePage = () => {
       fetchNewListings();
     }
   }, [filters.locationCoords, filters.type]);
-  // --- 🟢 API 2: TIN MỚI ĐĂNG (ƯU TIÊN VIP + MỚI NHẤT) ---
-  // Luôn gọi thẳng DB (không qua Elasticsearch) để đảm bảo có đủ dữ liệu
-  // isPromoted, promotionPackageName cho hiển thị badge VIP/Hot
+  const fetchFeaturedProjects = async () => {
+    setLoadingProjects(true);
+
+    try {
+      const res = await roomService.getPublicProjects(0, 8);
+      setFeaturedProjects(normalizeArrayData(res));
+    } catch (error) {
+      console.error('Lỗi tải dự án nổi bật:', error);
+      setFeaturedProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
   const fetchNewListings = async () => {
     setLoadingNew(true);
     try {
@@ -844,10 +871,69 @@ const HomePage = () => {
               )}
             </div>
           </div>
+          {/* SECTION 3: DỰ ÁN / KHU TRỌ NỔI BẬT */}
+          {(loadingProjects || featuredProjects.length > 0) && (
+            <div className="bg-white p-5 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <Title level={4} style={{ margin: 0 }}>
+                  Dự án / Khu trọ nổi bật
+                </Title>
+
+                <Button
+                  type="link"
+                  className="text-gray-500 hover:text-[#f96302]"
+                  onClick={() => navigate('/filter')}
+                >
+                  Xem thêm <RightOutlined />
+                </Button>
+              </div>
+
+              {loadingProjects ? (
+                <Row gutter={[16, 16]}>
+                  {[1, 2, 3, 4].map(i => (
+                    <Col xs={24} sm={12} md={6} key={i}>
+                      <Skeleton active />
+                    </Col>
+                  ))}
+                </Row>
+              ) : (
+                <Row gutter={[16, 16]}>
+                  {featuredProjects.map(project => (
+                    <Col xs={24} sm={12} md={6} key={project.id}>
+                      <Card
+                        hoverable
+                        className="rounded-xl overflow-hidden h-full border border-gray-100 hover:shadow-md transition-all"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                        cover={
+                          <div className="h-36 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+                            <EnvironmentFilled className="text-4xl text-[#f96302]" />
+                          </div>
+                        }
+                      >
+                        <div className="font-bold text-gray-800 line-clamp-1">
+                          {project.name || project.title || 'Dự án / Khu trọ'}
+                        </div>
+
+                        <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          <EnvironmentFilled className="mr-1" />
+                          {project.address || project.province || 'Chưa cập nhật địa chỉ'}
+                        </div>
+
+                        {project.totalProperties !== undefined && (
+                          <Tag color="orange" className="mt-3">
+                            {project.totalProperties} tin đăng
+                          </Tag>
+                        )}
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              )}
+            </div>
+          )}
 
 
-
-          {/* SECTION 3: DANH SÁCH CHÍNH */}
+          {/* SECTION 4: DANH SÁCH CHÍNH */}
           <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
               <Title level={4}>Tin dành cho bạn</Title>
