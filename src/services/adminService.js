@@ -43,12 +43,12 @@ const adminService = {
 
   getDashboardStats: () =>
     axiosClient.get('/admin/properties', {
-      params: { page: 0, size: 1 }
+      params: { page: 0, size: 1, _t: Date.now() }
     }),
 
   getAllPropertiesStat: (status) =>
     axiosClient.get('/admin/properties', {
-      params: { status, page: 0, size: 1 }
+      params: { status, page: 0, size: 1, _t: Date.now() }
     }),
 
   getMonthlyTransactions: () =>
@@ -59,7 +59,8 @@ const adminService = {
       params: {
         status: 'PENDING',
         page: 0,
-        size: 100
+        size: 100,
+        _t: Date.now()
       }
     }),
 

@@ -9,7 +9,17 @@ const RoomApprove = () => {
   const [loading, setLoading] = useState(false);
   const [rejectModal, setRejectModal] = useState({ open: false, roomId: null });
   const [reason, setReason] = useState("");
+  const normalizePageData = (res) => {
+    const raw =
+      res?.data?.result?.content ||
+      res?.data?.content ||
+      res?.data?.data?.content ||
+      res?.data?.result ||
+      res?.data?.data ||
+      [];
 
+    return Array.isArray(raw) ? raw : [];
+  };
   const fetchRooms = async () => {
     setLoading(true);
     try {
@@ -17,8 +27,21 @@ const RoomApprove = () => {
       const res = await adminService.getPendingRooms();
       console.log('✅ API Response:', res.data);
 
-      // Hỗ trợ bóc tách danh sách từ Page<T> của Spring Boot (nằm trong .content)
-      const actualData = res.data?.content || res.data?.result || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+
+
+      const fetchRooms = async () => {
+        setLoading(true);
+        try {
+          const res = await adminService.getPendingRooms();
+          setRooms(normalizePageData(res));
+        } catch (error) {
+          console.error(error);
+          message.error('Lỗi tải danh sách phòng chờ duyệt');
+          setRooms([]);
+        } finally {
+          setLoading(false);
+        }
+      };
 
       if (Array.isArray(actualData)) {
         setRooms(actualData);
@@ -72,19 +95,19 @@ const RoomApprove = () => {
       render: (_, record) => {
         const src = getImageUrl(record);
         console.log(`[DEBUG Image] Record ID: ${record.id}, getImageUrl(record):`, src, `Raw images:`, record.images);
-        
+
         // If it's a placeholder from imageHelper, just show the div
         if (!src || src.includes('via.placeholder.com')) {
-           return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
+          return <div className="w-[80px] h-[60px] bg-gray-200 flex items-center justify-center rounded text-xs text-gray-500">No Image</div>;
         }
 
         return (
-          <Image 
-             src={src} 
-             width={80} 
-             height={60} 
-             className="object-cover rounded" 
-             fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
+          <Image
+            src={src}
+            width={80}
+            height={60}
+            className="object-cover rounded"
+            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
           />
         );
       }
@@ -113,7 +136,7 @@ const RoomApprove = () => {
           </Button>
         </Space>
       )
-    } 
+    }
   ];
 
   return (
@@ -126,9 +149,9 @@ const RoomApprove = () => {
         open={rejectModal.open}
         onOk={handleReject}
         onCancel={() => setRejectModal({ open: false, roomId: null })}
-        okButtonProps={{ 
-          danger: true, 
-          className: "bg-red-500 hover:bg-red-600 text-white" 
+        okButtonProps={{
+          danger: true,
+          className: "bg-red-500 hover:bg-red-600 text-white"
         }}
       >
         <p>Lý do từ chối:</p>

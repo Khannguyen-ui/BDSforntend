@@ -19,13 +19,43 @@ const { Title, Text } = Typography;
 const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [pendingRooms, setPendingRooms] = useState(0);
-    const [totalRooms, setTotalRooms]     = useState(0);
-    const [activeRooms, setActiveRooms]   = useState(0);
-    const [pendingKyc, setPendingKyc]     = useState(0);
-    const [totalUsers, setTotalUsers]     = useState(0);
+    const [totalRooms, setTotalRooms] = useState(0);
+    const [activeRooms, setActiveRooms] = useState(0);
+    const [pendingKyc, setPendingKyc] = useState(0);
+    const [totalUsers, setTotalUsers] = useState(0);
     const [monthlyRevenue, setMonthlyRevenue] = useState(0);
-    const [revenueData, setRevenueData]   = useState([]);
+    const [revenueData, setRevenueData] = useState([]);
     const [recentPending, setRecentPending] = useState([]);
+
+    const getPage = (res) => {
+        return (
+            res?.data?.result ||
+            res?.data?.data ||
+            res?.data ||
+            {}
+        );
+    };
+
+    const getPageContent = (res) => {
+        const raw =
+            res?.data?.result?.content ||
+            res?.data?.content ||
+            res?.data?.data?.content ||
+            [];
+
+        return Array.isArray(raw) ? raw : [];
+    };
+
+    const getTotalElements = (res) => {
+        const page = getPage(res);
+
+        return Number(
+            page?.totalElements ??
+            page?.numberOfElements ??
+            page?.content?.length ??
+            0
+        );
+    };
 
     const fetchDashboardData = async () => {
         setLoading(true);
@@ -49,73 +79,88 @@ const Dashboard = () => {
 
             // 1. Pending rooms count
             if (results[0].status === 'fulfilled') {
-                const d = results[0].value.data;
-                setPendingRooms(d?.totalElements ?? d?.content?.length ?? 0);
+                setPendingRooms(getTotalElements(results[0].value));
             }
 
             // 2. Total rooms
             if (results[1].status === 'fulfilled') {
-                const d = results[1].value.data;
-                setTotalRooms(d?.totalElements ?? 0);
+                setTotalRooms(getTotalElements(results[1].value));
             }
 
             // 3. Active rooms
             if (results[2].status === 'fulfilled') {
-                const d = results[2].value.data;
-                setActiveRooms(d?.totalElements ?? d?.content?.length ?? 0);
+                setActiveRooms(getTotalElements(results[2].value));
             }
 
             // 4. Pending KYC
             if (results[3].status === 'fulfilled') {
                 const d = results[3].value.data;
-                const list = Array.isArray(d) ? d : (d?.content || d?.result || []);
+                const list =
+                    Array.isArray(d?.result) ? d.result :
+                        Array.isArray(d?.content) ? d.content :
+                            Array.isArray(d) ? d :
+                                [];
+
                 setPendingKyc(list.length);
             }
 
             // 5. Recent pending rooms
             if (results[4].status === 'fulfilled') {
-                const d = results[4].value.data;
-                const list = d?.content || [];
+                const list = getPageContent(results[4].value);
                 setRecentPending(list.slice(0, 5));
             }
 
             // 6. Total users
             if (results[5].status === 'fulfilled') {
                 const d = results[5].value.data;
-                const list = Array.isArray(d) ? d : (d?.content || d?.result || []);
-                setTotalUsers(d?.totalElements ?? list.length ?? 0);
+                const list =
+                    Array.isArray(d?.result) ? d.result :
+                        Array.isArray(d?.content) ? d.content :
+                            Array.isArray(d) ? d :
+                                [];
+
+                setTotalUsers(
+                    Number(
+                        d?.result?.totalElements ??
+                        d?.totalElements ??
+                        list.length ??
+                        0
+                    )
+                );
             }
 
             // 7. Revenue từ transactions trong tháng hiện tại
             if (results[6].status === 'fulfilled') {
                 const d = results[6].value.data;
-                const rawHistory = d?.result || d || [];
-                const txList = Array.isArray(rawHistory) ? rawHistory : (rawHistory?.content || []);
-                const isRevenue = (type) => ['PURCHASE_PACKAGE', 'MEMBERSHIP', 'ROOM_PROMOTION', 'PUSH_ROOM', 'DEDUCTION', 'POST_FEE'].includes(type);
 
-                const thisMonth = dayjs().month();
-                const thisYear = dayjs().year();
+                const transactions =
+                    Array.isArray(d?.result) ? d.result :
+                        Array.isArray(d?.content) ? d.content :
+                            Array.isArray(d) ? d :
+                                [];
 
-                const monthTotal = txList
-                    .filter(tx => {
-                        if (tx.status !== 'SUCCESS') return false;
-                        if (!isRevenue(tx.type)) return false;
-                        const dt = dayjs(tx.createdAt);
-                        return dt.month() === thisMonth && dt.year() === thisYear;
-                    })
-                    .reduce((sum, tx) => sum + Math.abs(tx.amount || 0), 0);
-                setMonthlyRevenue(monthTotal);
+                const successTransactions = transactions.filter(t => t.status === 'SUCCESS');
 
-                const monthlyMap = {};
-                txList.filter(tx => tx.status === 'SUCCESS' && isRevenue(tx.type)).forEach(tx => {
-                    const key = dayjs(tx.createdAt).format('MM/YYYY');
-                    monthlyMap[key] = (monthlyMap[key] || 0) + Math.abs(tx.amount || 0);
-                });
-                const chartData = Object.entries(monthlyMap)
-                    .sort(([a], [b]) => dayjs(a, 'MM/YYYY').unix() - dayjs(b, 'MM/YYYY').unix())
-                    .slice(-6)
-                    .map(([month, revenue]) => ({ month, revenue }));
-                setRevenueData(chartData.length > 0 ? chartData : [{ month: dayjs().format('MM/YYYY'), revenue: 0 }]);
+                const currentMonth = dayjs().format('YYYY-MM');
+
+                const monthlyTotal = successTransactions
+                    .filter(t => dayjs(t.createdAt).format('YYYY-MM') === currentMonth)
+                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+                setMonthlyRevenue(monthlyTotal);
+
+                const grouped = successTransactions.reduce((acc, t) => {
+                    const month = dayjs(t.createdAt).format('MM/YYYY');
+                    acc[month] = (acc[month] || 0) + Number(t.amount || 0);
+                    return acc;
+                }, {});
+
+                setRevenueData(
+                    Object.entries(grouped).map(([month, revenue]) => ({
+                        month,
+                        revenue
+                    }))
+                );
             } else {
                 console.error("Lỗi lấy transactions:", results[6].reason);
                 import('antd').then(({ message }) => {
