@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Input, Button, Card, Row, Col, Tag, Spin, Empty, Select, message,
-  ConfigProvider, Popover, Tabs, Typography, Skeleton
+  ConfigProvider, Popover,  Typography, Skeleton
 } from 'antd';
 import {
-  SearchOutlined, EnvironmentFilled, HomeFilled, CheckOutlined,
-  AimOutlined, DownOutlined, HeartOutlined, PictureOutlined, RightOutlined,
+  SearchOutlined, EnvironmentFilled,  CheckOutlined,
+   DownOutlined, HeartOutlined, RightOutlined,
   HistoryOutlined,
   CloseOutlined, CrownFilled, FireFilled, PlayCircleFilled
 } from '@ant-design/icons';
@@ -121,7 +121,7 @@ const HomePage = () => {
 
   const [locationStats, setLocationStats] = useState([]);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [activeTabType, setActiveTabType] = useState('ALL');
+  
 
   // State Popover
   const [openLocation, setOpenLocation] = useState(false);
@@ -181,11 +181,9 @@ const HomePage = () => {
   const [topSearches, setTopSearches] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
 
-  // --- INIT DATA ---
   useEffect(() => {
     fetchRooms();
     fetchNewListings();
-    fetchLocationCounts('ALL');
     fetchHistory();
     fetchTopSearches();
   }, []);
@@ -391,20 +389,7 @@ const HomePage = () => {
   };
 
 
-  const handleTabChange = (key) => {
-    let type = 'ALL';
 
-    if (key === '2') type = 'HOUSE';
-    if (key === '3') type = 'ROOM';
-
-    setActiveTabType(type);
-
-    const updatedFilters = { ...filters, type };
-
-    setFilters(updatedFilters);
-    fetchRooms(false, updatedFilters);
-    fetchNewListings(updatedFilters);
-  };
   const handleApplyLocation = async (locData) => {
     if (!locData.fullText) return;
     const hide = messageApi.loading(`Đang cập nhật tin tại ${locData.displayName}...`, 0);
@@ -423,10 +408,9 @@ const HomePage = () => {
 
         setFilters(newFilters); // Cập nhật tên hiển thị trên thanh Search
 
-        // 🟢 RA LỆNH CẬP NHẬT TẤT CẢ DANH SÁCH TIN
+
         fetchRooms(false, newFilters);
         fetchNewListings(newFilters);
-        fetchLocationCounts(newFilters.type);
 
         hide();
         messageApi.success(`Đã hiển thị tin tại: ${locData.displayName}`);
@@ -696,8 +680,7 @@ const HomePage = () => {
                     onApply={(val) => {
                       const newFilters = { ...filters, type: val };
                       setFilters(newFilters);
-                      fetchRooms(false, newFilters); // 🟢 Gọi fetch ngay với loại phòng mới
-                      fetchLocationCounts(val);
+                      fetchRooms(false, newFilters);
                     }}
                   />
                 }
@@ -830,8 +813,8 @@ const HomePage = () => {
                   <div
                     key={loc.id}
                     className={`relative rounded-lg overflow-hidden cursor-pointer group ${loc.colSpan === 2
-                        ? 'md:col-span-2 md:row-span-2'
-                        : 'md:col-span-1 md:row-span-1'
+                      ? 'md:col-span-2 md:row-span-2'
+                      : 'md:col-span-1 md:row-span-1'
                       } h-[160px] md:h-auto`}
                     onClick={() => {
                       navigate('/filter', {
