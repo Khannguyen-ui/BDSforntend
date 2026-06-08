@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Tag, Modal, Input, message, Image, Space } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Modal, Input, message, Image, Space, Avatar, Typography } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
 import adminService from '../../services/adminService';
 import { getImageUrl } from '../../utils/imageHelper';
+
+const { Text } = Typography;
 
 const RoomApprove = () => {
   const [rooms, setRooms] = useState([]); // [cite: 674]
@@ -99,12 +101,61 @@ const RoomApprove = () => {
       dataIndex: 'price',
       render: (val) => <span className="text-blue-600 font-bold">{val?.toLocaleString()} đ</span>
     },
-    { title: 'Mô giới', dataIndex: 'ownerId', render: (id) => `ID: ${id}` }, // Backend DTO has ownerId
+    {
+      title: 'Người đăng',
+      key: 'owner',
+      width: 220,
+      render: (_, record) => (
+        <Space>
+          <Avatar
+            size={36}
+            icon={<UserOutlined />}
+            src={record.ownerAvatarSnapshot}
+          />
+
+          <div>
+            <div className="font-semibold">
+              {record.ownerNameSnapshot || `Người dùng #${record.ownerId}`}
+            </div>
+
+            <Text type="secondary" className="text-xs">
+              ID: {record.ownerId || '--'}
+              {record.ownerPhoneSnapshot ? ` • ${record.ownerPhoneSnapshot}` : ''}
+            </Text>
+          </div>
+        </Space>
+      )
+    },
     {
       title: 'Gói tin',
-      dataIndex: 'promotionPackageId', // Backend DTO has promotionPackageId
-      render: (id) => <Tag color="gold">Gói ID: {id || 'Không'}</Tag>
-    },
+      key: 'promotion',
+      width: 180,
+      render: (_, record) => {
+        if (!record.promotionPackageId && !record.promotionPackageName && !record.isPromoted) {
+          return <Tag>Không dùng gói</Tag>;
+        }
+
+        return (
+          <div>
+            <Tag color={record.isPromoted ? 'gold' : 'blue'}>
+              {record.promotionPackageName || `Gói #${record.promotionPackageId}`}
+            </Tag>
+
+            {record.promotionExpiresAt && (
+              <div className="text-xs text-gray-500 mt-1">
+                Hết hạn: {new Date(record.promotionExpiresAt).toLocaleString('vi-VN')}
+              </div>
+            )}
+
+            {record.quotaDeducted !== undefined && (
+              <div className="text-xs text-gray-400">
+                {record.quotaDeducted ? 'Đã trừ quota' : 'Chưa trừ quota'}
+              </div>
+            )}
+          </div>
+        );
+      }
+    }, 
     {
       title: 'Hành động',
       render: (_, record) => (
