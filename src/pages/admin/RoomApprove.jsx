@@ -20,48 +20,29 @@ const RoomApprove = () => {
 
     return Array.isArray(raw) ? raw : [];
   };
+
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Calling getPendingRooms...');
       const res = await adminService.getPendingRooms();
-      console.log('✅ API Response:', res.data);
+      const data = normalizePageData(res);
 
-
-
-      const fetchRooms = async () => {
-        setLoading(true);
-        try {
-          const res = await adminService.getPendingRooms();
-          setRooms(normalizePageData(res));
-        } catch (error) {
-          console.error(error);
-          message.error('Lỗi tải danh sách phòng chờ duyệt');
-          setRooms([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      if (Array.isArray(actualData)) {
-        setRooms(actualData);
-        console.log('📊 Loaded rooms:', actualData.length);
-      } else {
-        console.error("❌ Data not array:", actualData);
-        setRooms([]);
-      }
+      setRooms(data);
+      console.log(' Loaded pending rooms:', data.length);
     } catch (error) {
-      console.error("💥 Fetch Error:", {
+      console.error(" Fetch Error:", {
         status: error.response?.status,
         message: error.response?.data?.message,
         url: error.config?.url
       });
+
       message.error(`Lỗi tải: ${error.response?.data?.message || error.message}`);
       setRooms([]);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => { fetchRooms(); }, []);
 
@@ -118,7 +99,7 @@ const RoomApprove = () => {
       dataIndex: 'price',
       render: (val) => <span className="text-blue-600 font-bold">{val?.toLocaleString()} đ</span>
     },
-    { title: 'Chủ trọ', dataIndex: 'ownerId', render: (id) => `ID: ${id}` }, // Backend DTO has ownerId
+    { title: 'Mô giới', dataIndex: 'ownerId', render: (id) => `ID: ${id}` }, // Backend DTO has ownerId
     {
       title: 'Gói tin',
       dataIndex: 'promotionPackageId', // Backend DTO has promotionPackageId
