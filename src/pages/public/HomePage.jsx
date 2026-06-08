@@ -902,11 +902,42 @@ const HomePage = () => {
                     <Col xs={24} sm={12} md={6} key={project.id}>
                       <Card
                         hoverable
-                        className="rounded-xl overflow-hidden h-full border border-gray-100 hover:shadow-md transition-all"
+                        className="rounded-xl overflow-hidden h-full border border-gray-100 hover:shadow-md transition-all group"
                         onClick={() => navigate(`/projects/${project.id}`)}
                         cover={
-                          <div className="h-36 bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-                            <EnvironmentFilled className="text-4xl text-[#f96302]" />
+                          <div className="relative h-40 overflow-hidden">
+                            {project.imageUrl ? (
+                              <img
+                                src={project.imageUrl}
+                                alt={project.name || project.title || 'Dự án'}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <ProvinceImage
+                                provinceName={project.province || project.address || 'Khu vực khác'}
+                                alt={project.name || project.title || 'Dự án'}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              />
+                            )}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                            <Tag
+                              color="#f96302"
+                              className="absolute top-3 left-3 border-none font-semibold text-xs"
+                            >
+                              Dự án
+                            </Tag>
+
+                            {project.totalProperties !== undefined && (
+                              <div className="absolute bottom-3 left-3 text-white">
+                                <div className="text-xs opacity-90">Đang có</div>
+                                <div className="font-bold text-lg">
+                                  {project.totalProperties} tin đăng
+                                </div>
+                              </div>
+                            )}
                           </div>
                         }
                       >
@@ -919,11 +950,15 @@ const HomePage = () => {
                           {project.address || project.province || 'Chưa cập nhật địa chỉ'}
                         </div>
 
-                        {project.totalProperties !== undefined && (
-                          <Tag color="orange" className="mt-3">
-                            {project.totalProperties} tin đăng
+                        <div className="mt-3 flex items-center justify-between">
+                          <Tag color="orange" className="m-0">
+                            {project.projectType || 'Khu trọ'}
                           </Tag>
-                        )}
+
+                          <span className="text-xs text-[#f96302] font-semibold">
+                            Xem chi tiết
+                          </span>
+                        </div>
                       </Card>
                     </Col>
                   ))}
