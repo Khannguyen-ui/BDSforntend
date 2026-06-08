@@ -9,7 +9,7 @@ import {
   DeleteOutlined, EyeOutlined, CheckCircleOutlined, ReloadOutlined,
   CrownOutlined, FileTextOutlined, DollarOutlined
 } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 import adminService from '../../services/adminService';
 import dayjs from 'dayjs';
@@ -39,6 +39,7 @@ const UserManagement = () => {
   const [propertyProjectFilter, setPropertyProjectFilter] = useState('ALL');
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [openedUserIdFromUrl, setOpenedUserIdFromUrl] = useState(null);
 
   // --- LOAD DỮ LIỆU ---
