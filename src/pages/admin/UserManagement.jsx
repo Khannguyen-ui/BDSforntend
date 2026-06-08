@@ -310,34 +310,7 @@ const UserManagement = () => {
         imgs = [rawImgs];
       }
     }
-    const propertyProjects = Array.from(
-      new Map(
-        userProperties
-          .filter(item => item.projectId && item.projectNameSnapshot)
-          .map(item => [
-            item.projectId,
-            {
-              id: item.projectId,
-              name: item.projectNameSnapshot
-            }
-          ])
-      ).values()
-    );
 
-    const propertyStatusOptions = Array.from(
-      new Set(userProperties.map(item => item.status).filter(Boolean))
-    );
-
-    const filteredUserProperties = userProperties.filter(item => {
-      const matchStatus =
-        propertyStatusFilter === 'ALL' || item.status === propertyStatusFilter;
-
-      const matchProject =
-        propertyProjectFilter === 'ALL' ||
-        Number(item.projectId) === Number(propertyProjectFilter);
-
-      return matchStatus && matchProject;
-    });
     return (
       <div>
         <div className="bg-gray-50 p-3 rounded mb-4 border">
@@ -507,6 +480,34 @@ const UserManagement = () => {
       String(user.email || '').toLowerCase().includes(keyword) ||
       String(user.id || '').includes(keyword)
     );
+  });
+  const propertyProjects = Array.from(
+    new Map(
+      userProperties
+        .filter(item => item.projectId && item.projectNameSnapshot)
+        .map(item => [
+          item.projectId,
+          {
+            id: item.projectId,
+            name: item.projectNameSnapshot
+          }
+        ])
+    ).values()
+  );
+
+  const propertyStatusOptions = Array.from(
+    new Set(userProperties.map(item => item.status).filter(Boolean))
+  );
+
+  const filteredUserProperties = userProperties.filter(item => {
+    const matchStatus =
+      propertyStatusFilter === 'ALL' || item.status === propertyStatusFilter;
+
+    const matchProject =
+      propertyProjectFilter === 'ALL' ||
+      Number(item.projectId) === Number(propertyProjectFilter);
+
+    return matchStatus && matchProject;
   });
 
   return (
