@@ -47,6 +47,7 @@ const roomService = {
   createRoom: (data) => axiosClient.post('/properties', data),
   deleteRoom: (id) => axiosClient.delete(`/properties/${id}`),
   updateRoom: (id, data) => axiosClient.put(`/properties/${id}`, data),
+  getMyQuota: () => axiosClient.get('/properties/quota/me'),
   getMyTrash: (page = 0, size = 10) => axiosClient.get('/properties/trash', { params: { page, size } }),
   restoreRoom: (id) => axiosClient.put(`/properties/${id}/restore`),
   hardDeleteRoom: (id) => axiosClient.delete(`/properties/${id}/force`),
@@ -83,7 +84,12 @@ const roomService = {
 
   // 5. Master data
   getAllAmenities: () => axiosClient.get('/amenities'),
-  getAllPackages: () => axiosClient.get('/api/admin/packages/active'),
+  getAllPackages: async () => {
+    const res = await axiosClient.get('/api/admin/packages/active');
+    return {
+      data: res.data?.result || res.data?.data || res.data || []
+    };
+  },
 
 
   // 6. Chi tiết phòng (Handle ApiResponse)
@@ -285,6 +291,7 @@ const roomService = {
       params: { page, size }
     });
   },
+
 };
 
 export default roomService;

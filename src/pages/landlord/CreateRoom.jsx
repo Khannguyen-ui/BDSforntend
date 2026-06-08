@@ -30,6 +30,8 @@ const CreateRoom = () => {
   const [amenitiesList, setAmenitiesList] = useState([]);
   const [projectsList, setProjectsList] = useState([]);
 
+  const [quota, setQuota] = useState(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
 
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
@@ -80,6 +82,24 @@ const CreateRoom = () => {
 
     };
     fetchMasterData();
+  }, []);
+
+  const fetchMyQuota = async () => {
+    try {
+      setQuotaLoading(true);
+      const res = await roomService.getMyQuota();
+      const data = res.data?.result || res.data?.data || res.data;
+      setQuota(data);
+      return data;
+    } catch (error) {
+      console.error("Lỗi tải quota:", error);
+      return null;
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchMyQuota();
   }, []);
 
   const handleLocationChange = (lat, lng, addressData) => {
@@ -170,6 +190,19 @@ const CreateRoom = () => {
   };
 
   const handleFinish = async (values) => {
+    const latestQuota = quota ?? await fetchMyQuota();
+    const remainingQuota = latestQuota?.freePostsRemaining ?? 0;
+
+    if (remainingQuota <= 0) {
+      modal.confirm({
+        title: 'Bạn đã hết lượt đăng tin',
+        content: 'Vui lòng mua gói lượt đăng tin để tiếp tục đăng bài.',
+        okText: 'Mua gói ngay',
+        cancelText: 'Để sau',
+        onOk: () => navigate('/landlord/vip-packages')
+      });
+      return;
+    }
     setLoading(true);
     try {
 
@@ -241,8 +274,8 @@ const CreateRoom = () => {
         validityDays: values.validityDays || 30
       };
 
-      // GỌI API tạo phòng (Lúc này đã có quota nếu vừa mua xong)
       await roomService.createRoom(payload);
+      await fetchMyQuota();
 
       message.success("Đăng tin thành công! Tin của bạn đang chờ phê duyệt.");
       navigate('/landlord/room-list');
@@ -290,6 +323,9 @@ const CreateRoom = () => {
       setLoading(false);
     }
   };
+  const isQuotaReady = quota !== null;
+  const remainingQuota = quota?.freePostsRemaining ?? 0;
+  const isOutOfQuota = isQuotaReady && !quotaLoading && remainingQuota <= 0;
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-[#f8f9fa]">
@@ -297,6 +333,21 @@ const CreateRoom = () => {
         title={<span className="text-lg font-bold text-blue-700"><HomeOutlined /> ĐĂNG TIN PHÒNG TRỌ MỚI</span>}
         className="shadow-xl rounded-xl border-t-4 border-blue-600"
       >
+        <div className="mb-4 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-gray-800">Lượt đăng còn lại</div>
+            <div className="text-sm text-gray-500">
+              Mỗi bài gửi duyệt sẽ giữ trước 1 lượt. Nếu bị từ chối, hệ thống hoàn lại lượt.
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div className="text-2xl font-bold text-[#f96302]">
+              {quotaLoading ? '...' : (quota?.freePostsRemaining ?? 0)}
+            </div>
+            <div className="text-xs text-gray-500">tin</div>
+          </div>
+        </div>
         <Form
           form={form}
           layout="vertical"
@@ -594,10 +645,29 @@ const CreateRoom = () => {
             size="large"
             block
             loading={loading}
-            className="h-14 bg-[#f96302] hover:bg-orange-600 font-bold text-xl shadow-lg rounded-lg border-none"
+            disabled={quotaLoading || isOutOfQuota}
+            className="h-14 bg-[#f96302] hover:bg-orange-600 font-bold text-xl shadow-lg rounded-lg border-none disabled:bg-gray-300 disabled:text-gray-500"
           >
-            XÁC NHẬN ĐĂNG TIN
+            {quotaLoading ? 'ĐANG KIỂM TRA LƯỢT ĐĂNG...' : isOutOfQuota ? 'HẾT LƯỢT ĐĂNG TIN' : 'XÁC NHẬN ĐĂNG TIN'}
           </Button>
+          {isOutOfQuota && (
+            <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-red-700">Bạn đã hết lượt đăng tin</div>
+                <div className="text-sm text-red-500">
+                  Vui lòng mua thêm gói lượt đăng để tiếp tục gửi bài.
+                </div>
+              </div>
+
+              <Button
+                type="primary"
+                className="bg-[#f96302] border-none font-semibold"
+                onClick={() => navigate('/landlord/vip-packages')}
+              >
+                Mua gói ngay
+              </Button>
+            </div>
+          )}
 
           <p className="text-center text-gray-400 text-xs mt-4 italic">
             * Bằng việc nhấn đăng tin, bạn đồng ý với Điều khoản và Quy định của Smart Rental.

@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Button, Typography, Tag, List, Divider, message, Spin, Modal, Tabs } from 'antd';
 import {
     CrownFilled, CheckCircleFilled, FireOutlined,
-    RocketFilled, LeftOutlined, PercentageOutlined,
-    InfoCircleOutlined, StarFilled
+    RocketFilled, LeftOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import roomService from '../../services/roomService';
 import paymentService from '../../services/paymentService';
 import useAuth from '../../hooks/useAuth';
-import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -42,6 +41,16 @@ const VIPServicePage = () => {
         };
         fetchPackages();
     }, []);
+    const getCurrentQuota = async () => {
+        try {
+            const res = await roomService.getMyQuota();
+            const data = res.data?.result || res.data?.data || res.data;
+            return data?.freePostsRemaining ?? 0;
+        } catch (error) {
+            console.warn("Không lấy được quota hiện tại:", error);
+            return 0;
+        }
+    };
 
     // Hàm Xử lý Mua Gói Hội Viên
     const handleRegisterMember = (pkg) => {
@@ -81,23 +90,41 @@ const VIPServicePage = () => {
             centered: true,
             onOk: async () => {
                 try {
+                    message.loading({ content: "Đang kiểm tra lượt đăng hiện tại...", key: 'pay_vip' });
+
+                    const oldQuota = await getCurrentQuota();
+
                     message.loading({ content: "Đang xử lý giao dịch...", key: 'pay_vip' });
 
                     await paymentService.buyMembership(pkg.id);
 
-                    message.success({
-                        content: "Mua gói lượt đăng thành công!",
-                        key: 'pay_vip',
-                        duration: 3
-                    });
+                    message.loading({ content: "Thanh toán thành công, đang cập nhật lượt đăng...", key: 'pay_vip' });
+
+                    const newQuota = await waitQuotaUpdated(oldQuota);
+
+                    if (newQuota !== null) {
+                        message.success({
+                            content: `Mua gói thành công! Hiện bạn có ${newQuota} lượt đăng.`,
+                            key: 'pay_vip',
+                            duration: 3
+                        });
+                    } else {
+                        message.warning({
+                            content: "Thanh toán thành công, lượt đăng đang đồng bộ. Nếu chưa thấy cập nhật, hãy tải lại trang.",
+                            key: 'pay_vip',
+                            duration: 4
+                        });
+                    }
 
                     navigate('/landlord/create-room');
                 } catch (error) {
                     const errorMsg = error.response?.data?.message || error.message || '';
+                    const lowerMsg = String(errorMsg).toLowerCase();
+
                     const isInsufficient =
-                        errorMsg.toLowerCase().includes('số dư') ||
-                        errorMsg.toLowerCase().includes('không đủ tiền') ||
-                        errorMsg.toLowerCase().includes('balance') ||
+                        lowerMsg.includes('số dư') ||
+                        lowerMsg.includes('không đủ tiền') ||
+                        lowerMsg.includes('balance') ||
                         error.response?.status === 400;
 
                     if (isInsufficient) {
@@ -115,6 +142,25 @@ const VIPServicePage = () => {
                 }
             }
         });
+    };
+    const waitQuotaUpdated = async (oldQuota = 0, maxRetry = 8) => {
+        for (let i = 0; i < maxRetry; i++) {
+            try {
+                const res = await roomService.getMyQuota();
+                const data = res.data?.result || res.data?.data || res.data;
+                const currentQuota = data?.freePostsRemaining ?? 0;
+
+                if (currentQuota > oldQuota) {
+                    return currentQuota;
+                }
+            } catch (error) {
+                console.warn("Quota chưa đồng bộ:", error);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 700));
+        }
+
+        return null;
     };
 
     if (loading) return <div className="flex h-screen justify-center items-center"><Spin size="large" tip="Đang tải..." /></div>;
@@ -162,7 +208,7 @@ const VIPServicePage = () => {
                                 {pkg.price?.toLocaleString()}
                             </span>
                             <span className="text-gray-500 text-xs ml-1 font-medium">
-                                đ / {isMembership ? `${pkg.quotaLimit || 0} tin` : `${pkg.durationDays} ngày`}đ / {isMembership ? `${pkg.durationDays} ngày` : 'tin'}
+                                {isMembership ? `đ / ${pkg.quotaLimit || 0} tin` : `đ / ${pkg.durationDays} ngày`}
                             </span>
                         </div>
                     </div>
@@ -232,7 +278,7 @@ const VIPServicePage = () => {
                                 <div className="text-center mb-6">
                                     <div className="inline-block bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm border border-blue-100">
                                         <InfoCircleOutlined className="mr-1" />
-                                      Mua gói này để được cộng <b>lượt đăng tin</b> vào tài khoản mô giới.
+                                        Mua gói này để được cộng <b>lượt đăng tin</b> vào tài khoản mô giới.
                                     </div>
                                 </div>
                                 <Row gutter={[24, 24]} justify="center">
