@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
   Table, Button, Tag, Space, Tabs, Popconfirm, message, Modal,
-  Form, Input, InputNumber, Select, Tooltip
+  Form, Input, InputNumber, Select, Tooltip, Upload, Image
 } from 'antd';
 import {
   DeleteOutlined, UndoOutlined, StopOutlined,
-  PlusOutlined, EditOutlined, EyeOutlined, HomeOutlined
+  PlusOutlined, EditOutlined, EyeOutlined, HomeOutlined,
+  UploadOutlined, EnvironmentOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import LocationPicker from '../../components/shared/LocationPicker';
 import roomService from '../../services/roomService';
-import { EnvironmentOutlined } from '@ant-design/icons';
+
 import dayjs from 'dayjs';
 
 const { TabPane } = Tabs;
@@ -30,6 +31,7 @@ const ProjectManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form] = Form.useForm();
+  const [imageUploading, setImageUploading] = useState(false);
 
   const handleProjectLocationChange = (lat, lng, addressData) => {
     form.setFieldsValue({
@@ -43,14 +45,76 @@ const ProjectManagement = () => {
       });
     }
   };
+  const handleSave = async (values) => {
+    try {
+      const payload = {
+        name: values.name?.trim(),
+        description: values.description?.trim() || '',
+        imageUrl: values.imageUrl || null,
+        address: values.address?.trim(),
+        projectType: values.projectType,
+        amenities: Array.isArray(values.amenities) ? values.amenities : [],
+        latitude: values.latitude !== undefined && values.latitude !== null
+          ? Number(values.latitude)
+          : null,
+        longitude: values.longitude !== undefined && values.longitude !== null
+          ? Number(values.longitude)
+          : null,
+      };
 
-  // --- FETCH DATA ---
+      if (!payload.name) {
+        message.error('Vui lòng nhập tên dự án');
+        return;
+      }
+
+      if (!payload.address) {
+        message.error('Vui lòng nhập hoặc chọn địa chỉ dự án');
+        return;
+      }
+
+      if (!payload.latitude || !payload.longitude) {
+        message.error('Vui lòng chọn vị trí dự án trên bản đồ');
+        return;
+      }
+
+      if (editingId) {
+        await adminService.updateProject(editingId, payload);
+        message.success('Cập nhật dự án thành công!');
+      } else {
+        await adminService.createProject(payload);
+        message.success('Tạo dự án thành công!');
+      }
+
+      setIsModalOpen(false);
+      fetchActiveProjects();
+    } catch (error) {
+      console.error('Lỗi lưu dự án:', error.response?.data || error);
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+
+      message.error('Lỗi lưu dự án: ' + errorMsg);
+    }
+  };
+  const normalizePageData = (res) => {
+    const raw =
+      res?.data?.result?.content ||
+      res?.data?.content ||
+      res?.data?.data?.content ||
+      res?.data?.result ||
+      res?.data?.data ||
+      [];
+
+    return Array.isArray(raw) ? raw : [];
+  };
+
   const fetchActiveProjects = async () => {
     setLoading(true);
     try {
       const res = await adminService.getAllProjects(0, 100);
-      const data = res.data?.content || res.data?.result || res.data?.data || [];
-      setActiveProjects(data);
+      setActiveProjects(normalizePageData(res));
     } catch (error) {
       console.error(error);
       message.error('Lỗi tải danh sách dự án');
@@ -80,8 +144,7 @@ const ProjectManagement = () => {
     setLoading(true);
     try {
       const res = await adminService.getTrashProjects(0, 100);
-      const data = res.data?.content || res.data?.result || res.data?.data || [];
-      setTrashProjects(data);
+      setTrashProjects(normalizePageData(res));
     } catch (error) {
       console.error(error);
       message.error('Lỗi tải dữ liệu thùng rác dự án');
@@ -132,16 +195,19 @@ const ProjectManagement = () => {
     }
   };
 
-  // --- MODAL (THÊM / SỬA) ---
-  form.setFieldsValue({
-    projectType: 'BOARDING_HOUSE',
-    latitude: 10.7769,
-    longitude: 106.7009,
-    amenities: []
-  });
+
+
   const openCreateModal = () => {
     setEditingId(null);
     form.resetFields();
+
+    form.setFieldsValue({
+      projectType: 'BOARDING_HOUSE',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      amenities: [],
+      imageUrl: null
+    });
 
     setIsModalOpen(true);
   };
@@ -151,6 +217,7 @@ const ProjectManagement = () => {
     form.setFieldsValue({
       name: record.name,
       description: record.description,
+      imageUrl: record.imageUrl,
       address: record.address,
       latitude: record.latitude,
       longitude: record.longitude,
@@ -163,62 +230,57 @@ const ProjectManagement = () => {
     });
     setIsModalOpen(true);
   };
+  const handleUploadProjectImage = async ({ file, onSuccess, onError }) => {
+    setImageUploading(true);
 
-  const handleSave = async (values) => {
     try {
-      const payload = {
-        name: values.name?.trim(),
-        description: values.description?.trim() || '',
-        address: values.address?.trim(),
-        projectType: values.projectType,
-        amenities: Array.isArray(values.amenities) ? values.amenities : [],
-        latitude: values.latitude !== undefined && values.latitude !== null
-          ? Number(values.latitude)
-          : null,
-        longitude: values.longitude !== undefined && values.longitude !== null
-          ? Number(values.longitude)
-          : null,
-      };
+      const res = await roomService.uploadImage(file);
 
-      if (!payload.name) {
-        message.error('Vui lòng nhập tên dự án');
-        return;
+      const imageUrl =
+        res.data?.result?.url ||
+        res.data?.result?.secureUrl ||
+        res.data?.result ||
+        res.data?.url ||
+        res.data?.secureUrl ||
+        res.data;
+
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        throw new Error('Không nhận được URL ảnh từ media-service');
       }
 
-      if (!payload.address) {
-        message.error('Vui lòng nhập hoặc chọn địa chỉ dự án');
-        return;
-      }
-
-      if (!payload.latitude || !payload.longitude) {
-        message.error('Vui lòng chọn vị trí dự án trên bản đồ');
-        return;
-      }
-
-      if (editingId) {
-        await adminService.updateProject(editingId, payload);
-        message.success('Cập nhật dự án thành công!');
-      } else {
-        await adminService.createProject(payload);
-        message.success('Tạo dự án thành công!');
-      }
-
-      setIsModalOpen(false);
-      fetchActiveProjects();
+      form.setFieldsValue({ imageUrl });
+      message.success('Upload ảnh dự án thành công!');
+      onSuccess?.(res.data);
     } catch (error) {
-      console.error('Lỗi lưu dự án:', error.response?.data || error);
-
-      const errorMsg =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message;
-
-      message.error('Lỗi lưu dự án: ' + errorMsg);
+      console.error('Lỗi upload ảnh dự án:', error);
+      message.error('Upload ảnh dự án thất bại');
+      onError?.(error);
+    } finally {
+      setImageUploading(false);
     }
   };
 
+
+
   // --- CỘT CHO TAB "ĐANG HOẠT ĐỘNG" ---
   const activeColumns = [
+    {
+      title: 'Ảnh',
+      dataIndex: 'imageUrl',
+      width: 90,
+      render: (url) => url ? (
+        <Image
+          src={url}
+          width={64}
+          height={44}
+          className="object-cover rounded"
+        />
+      ) : (
+        <div className="w-16 h-11 rounded bg-orange-50 flex items-center justify-center text-[#f96302]">
+          <HomeOutlined />
+        </div>
+      )
+    },
     { title: 'Tên dự án', dataIndex: 'name', width: 250, render: (t) => <span className="font-bold">{t}</span> },
     { title: 'Địa chỉ', dataIndex: 'address', ellipsis: true },
     {
@@ -268,6 +330,23 @@ const ProjectManagement = () => {
 
   // --- CỘT CHO TAB "THÙNG RÁC" ---
   const trashColumns = [
+    {
+      title: 'Ảnh',
+      dataIndex: 'imageUrl',
+      width: 90,
+      render: (url) => url ? (
+        <Image
+          src={url}
+          width={64}
+          height={44}
+          className="object-cover rounded"
+        />
+      ) : (
+        <div className="w-16 h-11 rounded bg-orange-50 flex items-center justify-center text-[#f96302]">
+          <HomeOutlined />
+        </div>
+      )
+    },
     { title: 'Tên dự án (Đã xóa)', dataIndex: 'name', width: 250, render: (t) => <span className="text-gray-400 line-through">{t}</span> },
     { title: 'Địa chỉ', dataIndex: 'address', ellipsis: true },
     { title: 'Ngày tạo', dataIndex: 'createdAt', render: (val) => val ? dayjs(val).format('DD/MM/YYYY') : '' },
@@ -357,6 +436,7 @@ const ProjectManagement = () => {
             </Form.Item>
           </div>
 
+
           <Form.Item
             name="address"
             label="Địa chỉ dự án / khu trọ"
@@ -419,7 +499,54 @@ const ProjectManagement = () => {
               ))}
             </Select>
           </Form.Item>
+          <Form.Item name="imageUrl" hidden>
+            <Input />
+          </Form.Item>
 
+          <Form.Item label="Ảnh đại diện dự án">
+            <Form.Item shouldUpdate noStyle>
+              {({ getFieldValue }) => {
+                const imageUrl = getFieldValue('imageUrl');
+
+                return (
+                  <div className="space-y-3">
+                    {imageUrl && (
+                      <Image
+                        src={imageUrl}
+                        width={220}
+                        height={130}
+                        className="object-cover rounded-lg border"
+                      />
+                    )}
+
+                    <Upload
+                      customRequest={handleUploadProjectImage}
+                      showUploadList={false}
+                      accept="image/*"
+                      maxCount={1}
+                    >
+                      <Button
+                        icon={<UploadOutlined />}
+                        loading={imageUploading}
+                      >
+                        {imageUrl ? 'Đổi ảnh dự án' : 'Tải ảnh dự án'}
+                      </Button>
+                    </Upload>
+
+                    {imageUrl && (
+                      <Button
+                        danger
+                        type="link"
+                        onClick={() => form.setFieldsValue({ imageUrl: null })}
+                      >
+                        Xóa ảnh
+                      </Button>
+                    )}
+                  </div>
+                );
+              }}
+            </Form.Item>
+          </Form.Item>
           <Form.Item name="description" label="Mô tả">
             <TextArea rows={4} placeholder="Nhập mô tả chi tiết về dự án..." />
           </Form.Item>
