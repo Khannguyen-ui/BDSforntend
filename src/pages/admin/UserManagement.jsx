@@ -813,11 +813,22 @@ const UserManagement = () => {
                             title: 'Xem',
                             width: 90,
                             render: (_, record) => (
-                              <a href={`/rooms/${record.id}`} target="_blank" rel="noopener noreferrer">
-                                <Button size="small" icon={<EyeOutlined />}>
-                                  Xem
+                              <Space>
+                                {record.status === 'ACTIVE' && (
+                                  <a href={`/rooms/${record.id}`} target="_blank" rel="noopener noreferrer">
+                                    <Button size="small" icon={<EyeOutlined />}>
+                                      Public
+                                    </Button>
+                                  </a>
+                                )}
+
+                                <Button
+                                  size="small"
+                                  onClick={() => navigate(`/admin/rooms?propertyId=${record.id}`)}
+                                >
+                                  Quản trị
                                 </Button>
-                              </a>
+                              </Space>
                             )
                           }
                         ]}
