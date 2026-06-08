@@ -23,16 +23,54 @@ import ReelsViewer from '../../components/modals/ReelsViewer';
 const { Option } = Select;
 const { Title } = Typography;
 
-// --- CẤU HÌNH DANH SÁCH TỈNH THÀNH ---
+const REGION_IMAGE_MAP = {
+  'Thành phố Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
+  'Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
+  'Tp Hồ Chí Minh': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80',
+  'Thành phố Hà Nội': 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1000&q=80',
+  'Hà Nội': 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1000&q=80',
+  'Thành phố Đà Nẵng': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1000&q=80',
+  'Đà Nẵng': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1000&q=80',
+  default: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1000&q=80'
+};
 
-// --- CẤU HÌNH DANH SÁCH TỈNH THÀNH (FIXED LINKS) ---
-const LOCATION_CONFIG = [
-  { id: 1, name: 'Tp Hồ Chí Minh', lat: 10.7769, lng: 106.7009, img: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1000&q=80', colSpan: 2, rowSpan: 2 },
-  { id: 2, name: 'Hà Nội', lat: 21.0285, lng: 105.8542, img: 'https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1000&q=80', colSpan: 1, rowSpan: 1 },
-  { id: 3, name: 'Đà Nẵng', lat: 16.0544, lng: 108.2022, img: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1000&q=80', colSpan: 1, rowSpan: 1 },
-  { id: 4, name: 'Đồng Nai', lat: 10.9575, lng: 106.8427, img: 'https://upload.wikimedia.org/wikipedia/commons/6/61/Giang_Dien_Waterfall.JPG', colSpan: 1, rowSpan: 1 },
-  { id: 5, name: 'Hải Phòng', lat: 20.8449, lng: 106.6881, img: 'https://upload.wikimedia.org/wikipedia/commons/0/0f/03-OPERA_HOUSE.jpg', colSpan: 1, rowSpan: 1 },
-];
+const normalizeTopRegions = (res) => {
+  const raw =
+    res?.data?.result ||
+    res?.data?.data ||
+    res?.data ||
+    [];
+
+  const list = Array.isArray(raw) ? raw : [];
+
+  return list
+    .map((item, index) => {
+      const name =
+        item.regionName ||
+        item.key ||
+        item.region ||
+        item.name ||
+        item.province ||
+        'Khu vực khác';
+
+      const count =
+        item.forRentCount ??
+        item.count ??
+        item.total ??
+        item.value ??
+        0;
+
+      return {
+        id: name,
+        name,
+        count,
+        img: REGION_IMAGE_MAP[name] || REGION_IMAGE_MAP.default,
+        colSpan: index === 0 ? 2 : 1,
+        rowSpan: index === 0 ? 2 : 1
+      };
+    })
+    .filter(item => item.name && item.name !== 'Không xác định');
+};
 
 
 
@@ -79,9 +117,11 @@ const HomePage = () => {
   const [newListings, setNewListings] = useState([]);
   const [loadingNew, setLoadingNew] = useState(true);
 
-  // State Thống kê Khu vực & Tab hiện tại
-  const [locationStats, setLocationStats] = useState(LOCATION_CONFIG);
-  const [activeTabType, setActiveTabType] = useState('ALL'); // 'ALL' | 'WHOLE' | 'SHARED'
+
+
+  const [locationStats, setLocationStats] = useState([]);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [activeTabType, setActiveTabType] = useState('ALL');
 
   // State Popover
   const [openLocation, setOpenLocation] = useState(false);
@@ -90,8 +130,7 @@ const HomePage = () => {
   const [filters, setFilters] = useState({ keyword: '', type: 'ALL', locationName: 'Toàn quốc', locationCoords: null, radius: undefined });
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
-  //Reaload Post
-  // Hàm này giúp tải lại tin ngay lập tức với dữ liệu lọc mới nhất
+
   const fetchRoomsWithParams = async (newParams) => {
     setLoading(true);
     setPage(0);
@@ -117,6 +156,22 @@ const HomePage = () => {
       setIsInitialLoad(false);
     }
   };
+  const fetchFeaturedRegions = async () => {
+    setLocationLoading(true);
+
+    try {
+      const res = await roomService.getTopRegionsTransactionStats(5, 'province.keyword');
+      setLocationStats(normalizeTopRegions(res));
+    } catch (error) {
+      console.error('Lỗi tải khu vực nổi bật:', error);
+      setLocationStats([]);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchFeaturedRegions();
+  }, []);
 
   // --- STATE LỊCH SỬ TÌM KIẾM ---
   const [historyList, setHistoryList] = useState([]);
@@ -335,70 +390,20 @@ const HomePage = () => {
     }
   };
 
-  // --- API 3: ĐẾM SỐ LƯỢNG (SỬA LỖI ĐẾM SAI) ---
-  const fetchLocationCounts = async (typeFilter) => {
-    try {
-      // 1. Lấy danh sách tin trực tiếp từ DB để tránh lỗi ElasticSearch và không bị giới hạn bán kính
-      const res = await axiosClient.get('/public/properties', {
-        params: { page: 0, size: 1000, status: 'ACTIVE' }
-      });
 
-      const rawData = res.data?.result || res.data?.data || res.data;
-      let allRooms = rawData?.content || rawData || [];
-
-      // 2. LỌC THEO LOẠI HÌNH TRƯỚC (Nếu không phải 'ALL')
-      if (typeFilter && typeFilter !== 'ALL') {
-        allRooms = allRooms.filter(room => {
-          if (typeFilter === 'HOUSE') return room.propertyType === 'HOUSE' || room.propertyType === 'APARTMENT' || room.rentalType === 'WHOLE';
-          if (typeFilter === 'ROOM') return room.propertyType === 'ROOM' || room.rentalType === 'SHARED';
-          return true;
-        });
-      }
-
-      // 3. Sau đó mới đếm theo từng khu vực
-      const updatedStats = LOCATION_CONFIG.map(loc => {
-        const countInArea = allRooms.filter(room => {
-          // Ưu tiên so sánh tên tỉnh/thành phố hoặc địa chỉ trước
-          let locNameMatch = loc.name;
-          if (loc.name === 'Tp Hồ Chí Minh') locNameMatch = 'Hồ Chí Minh';
-
-          if (room.province && room.province.includes(locNameMatch)) return true;
-          if (room.address && room.address.includes(locNameMatch)) return true;
-
-          const rLat = room.latitude || room.lat;
-          const rLng = room.longitude || room.lng;
-          if (!rLat || !rLng) return false;
-
-          const distance = getDistance(loc.lat, loc.lng, rLat, rLng);
-          // Tăng bán kính lên 50km để bao trọn vùng tỉnh/thành phố lớn
-          return distance <= 50000;
-        }).length;
-
-        return { ...loc, count: countInArea };
-      });
-
-      setLocationStats(updatedStats);
-    } catch (error) {
-      console.error("Lỗi cập nhật số lượng tin theo Tab:", error);
-    }
-  };
   const handleTabChange = (key) => {
     let type = 'ALL';
+
     if (key === '2') type = 'HOUSE';
     if (key === '3') type = 'ROOM';
 
     setActiveTabType(type);
 
-    // 1. Tạo object filter mới để truyền trực tiếp
-    const updatedFilters = { ...filters, type: type };
+    const updatedFilters = { ...filters, type };
 
-    // 2. Cập nhật state (để hiển thị UI)
     setFilters(updatedFilters);
-
-    // 3. 🟢 GỌI LẠI CÁC HÀM CẬP NHẬT DỮ LIỆU
-    fetchRooms(false, updatedFilters); // Load lại danh sách Tin dành cho bạn
-    fetchNewListings(updatedFilters);  // Load lại danh sách Tin mới
-    fetchLocationCounts(type);         // Đếm lại số lượng trên ảnh thành phố
+    fetchRooms(false, updatedFilters);
+    fetchNewListings(updatedFilters);
   };
   const handleApplyLocation = async (locData) => {
     if (!locData.fullText) return;
@@ -806,59 +811,62 @@ const HomePage = () => {
               <div className="flex items-center gap-4">
                 <Title level={4} style={{ margin: 0 }}>Khu vực cho thuê nổi bật</Title>
               </div>
-              <Tabs
-                defaultActiveKey="1"
-                items={[
-                  { key: '1', label: 'Tất cả' },
-                  { key: '2', label: 'Nhà nguyên căn' },
-                  { key: '3', label: 'Ký túc xá / Ở ghép' }
-                ]}
-                className="custom-tabs-no-bar"
-                onChange={handleTabChange}
-              />
+              <span className="text-sm text-gray-500">
+                Dựa trên thống kê tin đang hoạt động
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-auto md:h-[350px]">
-              {locationStats.map((loc) => (
-                <div
-                  key={loc.id}
-                  className={`relative rounded-lg overflow-hidden cursor-pointer group ${loc.colSpan === 2 ? 'md:col-span-2 md:row-span-2' : 'md:col-span-1 md:row-span-1'} h-[160px] md:h-auto`}
-                  onClick={() => {
-                    let searchName = loc.name;
-                    if (loc.name === 'Tp Hồ Chí Minh') searchName = 'Thành phố Hồ Chí Minh';
-                    else if (loc.name === 'Hà Nội') searchName = 'Thành phố Hà Nội';
-                    else if (loc.name === 'Đà Nẵng') searchName = 'Thành phố Đà Nẵng';
-                    else if (loc.name === 'Hải Phòng') searchName = 'Thành phố Hải Phòng';
-                    else if (loc.name === 'Đồng Nai') searchName = 'Thành phố Đồng Nai';
+              {locationLoading ? (
+                <div className="col-span-4 flex items-center justify-center h-[250px]">
+                  <Spin />
+                </div>
+              ) : locationStats.length === 0 ? (
+                <div className="col-span-4">
+                  <Empty description="Chưa có dữ liệu khu vực nổi bật" />
+                </div>
+              ) : (
+                locationStats.map((loc) => (
+                  <div
+                    key={loc.id}
+                    className={`relative rounded-lg overflow-hidden cursor-pointer group ${loc.colSpan === 2
+                        ? 'md:col-span-2 md:row-span-2'
+                        : 'md:col-span-1 md:row-span-1'
+                      } h-[160px] md:h-auto`}
+                    onClick={() => {
+                      navigate('/filter', {
+                        state: {
+                          locationName: loc.name,
+                          province: loc.name,
+                          type: 'ALL',
+                          keyword: ''
+                        }
+                      });
+                    }}
+                  >
+                    <img
+                      src={loc.img}
+                      alt={loc.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
 
-                    navigate('/filter', {
-                      state: {
-                        locationName: searchName,
-                        province: searchName,
-                        type: activeTabType,
-                        keyword: ''
-                      }
-                    });
-                  }}
-                >
-                  <img src={loc.img} alt={loc.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
 
-                  {/* VỊ TRÍ CODE BẠN GỬI ĐẶT TẠI ĐÂY */}
-                  <div className="absolute bottom-4 left-4 text-white z-10">
-                    <h3 className="text-lg md:text-xl font-bold mb-0 text-white drop-shadow-md">
-                      {loc.name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      {/* Chấm xanh khi có tin (>0), chấm xám khi không có (0) */}
-                      <span className={`w-2 h-2 rounded-full ${loc.count > 0 ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></span>
-                      <span className="text-xs md:text-sm font-medium opacity-90">
-                        {(loc.count || 0).toLocaleString()} tin đăng
-                      </span>
+                    <div className="absolute bottom-4 left-4 text-white z-10">
+                      <h3 className="text-lg md:text-xl font-bold mb-0 text-white drop-shadow-md">
+                        {loc.name}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        <span className="text-xs md:text-sm font-medium opacity-90">
+                          {(loc.count || 0).toLocaleString()} tin đăng
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
