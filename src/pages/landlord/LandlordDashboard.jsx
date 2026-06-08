@@ -141,7 +141,23 @@ const LandlordDashboard = () => {
     const balance = wallet?.balance || 0;
     const holdBalance = wallet?.holdBalance || 0;
     const availableBalance = balance - holdBalance;
+    const getTxType = (tx) => {
+        return String(tx.transactionType || tx.type || '').toUpperCase();
+    };
 
+    const getTxAmount = (tx) => {
+        return Number(tx.amount || 0);
+    };
+
+    const isPositiveTx = (tx) => {
+        const amount = getTxAmount(tx);
+        const type = getTxType(tx);
+
+        if (amount > 0) return true;
+        if (amount < 0) return false;
+
+        return ['DEPOSIT', 'REFUND', 'RELEASE'].includes(type);
+    };
     const thisMonthDeposit = transactions
         .filter(tx =>
             getTxType(tx) === 'DEPOSIT' &&
@@ -164,23 +180,7 @@ const LandlordDashboard = () => {
         const map = { ACTIVE: 'Đang hiển thị', PENDING: 'Chờ duyệt', REJECTED: 'Bị từ chối', HIDDEN: 'Đã ẩn' };
         return map[status] || status;
     };
-    const getTxType = (tx) => {
-        return String(tx.transactionType || tx.type || '').toUpperCase();
-    };
 
-    const getTxAmount = (tx) => {
-        return Number(tx.amount || 0);
-    };
-
-    const isPositiveTx = (tx) => {
-        const amount = getTxAmount(tx);
-        const type = getTxType(tx);
-
-        if (amount > 0) return true;
-        if (amount < 0) return false;
-
-        return ['DEPOSIT', 'REFUND', 'RELEASE'].includes(type);
-    };
     const getTxColor = (tx) => {
         return isPositiveTx(tx) ? '#52c41a' : '#f5222d';
     };
