@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   Button, Card, Row, Col, Tag, Spin, Empty, Select,
-  ConfigProvider, Avatar, Typography, Divider, Breadcrumb,
-  Popover, Slider, Checkbox, InputNumber, Input, Radio, message,
+  ConfigProvider, Avatar, Divider,
+  Popover, Slider, InputNumber, Input, Radio, message,
   Pagination, Drawer, App
 } from 'antd';
 import {
   EnvironmentOutlined, HeartOutlined, UserOutlined, FilterOutlined,
-  AppstoreOutlined, UnorderedListOutlined, EnvironmentFilled, HomeFilled,
-  DownOutlined, CameraFilled, CheckOutlined,
-  RightOutlined, SearchOutlined, AimOutlined, CrownFilled, FireFilled, PhoneOutlined, MessageOutlined
+  AppstoreOutlined, UnorderedListOutlined, EnvironmentFilled,
+  DownOutlined, CameraFilled, SearchOutlined, AimOutlined, CrownFilled, FireFilled
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -17,17 +16,16 @@ import 'dayjs/locale/vi';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import roomService from '../../services/roomService';
-import userService from '../../services/userService';
 import { formatCurrency } from '../../utils/format';
 import { getImageUrl } from '../../utils/imageHelper';
 import provinceData from '../../data/province.json';
 import wardData from '../../data/ward.json';
 
-// Cấu hình dayjs
+
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
-const { Title, Text } = Typography;
+
 const { Option } = Select;
 
 
@@ -46,11 +44,14 @@ const FURNITURE_OPTIONS = [
 const NearbyAmenitiesContent = ({ onClose, onApply }) => {
   const { message: appMessage } = App.useApp();
   const [keyword, setKeyword] = useState('');
-  const [totalElements, setTotalElements] = useState(0);
+
 
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [radius, setRadius] = useState(2000); // Mặc định 2km
+  const [radius, setRadius] = useState(2000);
+
+
+
 
   const quickTags = [
     { label: 'ĐH Hutech', search: 'Đại học Hutech' },
@@ -294,7 +295,12 @@ const FilterPage = () => {
   const [totalElements, setTotalElements] = useState(0);
 
   const getInitialFilters = () => {
-    if (searchParams.get('lat') || searchParams.get('keyword') || searchParams.get('province')) {
+    if (
+      searchParams.get('lat') ||
+      searchParams.get('keyword') ||
+      searchParams.get('province') ||
+      searchParams.get('projectId')
+    ) {
       return {
         keyword: searchParams.get('keyword') || '',
         type: searchParams.get('type') || 'ALL',
@@ -307,6 +313,7 @@ const FilterPage = () => {
         province: searchParams.get('province') || undefined,
         district: searchParams.get('district') || undefined,
         ward: searchParams.get('ward') || undefined,
+        projectId: searchParams.get('projectId') || undefined,
       };
     }
 
@@ -335,11 +342,10 @@ const FilterPage = () => {
 
   const [viewMode, setViewMode] = useState('list');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const pageSize = 6;
 
   // State Popover Header
   const [openLocation, setOpenLocation] = useState(false);
-  const [openType, setOpenType] = useState(false);
   const [openAmenities, setOpenAmenities] = useState(false);
   const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
 
@@ -378,8 +384,17 @@ const FilterPage = () => {
     };
     fetchMasterData();
   }, []);
+  useEffect(() => {
+    const projectIdFromUrl = searchParams.get('projectId');
 
-  // Lắng nghe URL thay đổi để update state
+    if (projectIdFromUrl) {
+      setSelectedProject(Number(projectIdFromUrl));
+      setCurrentPage(1);
+    } else {
+      setSelectedProject(undefined);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const lat = searchParams.get('lat');
     if (lat) {
@@ -440,7 +455,8 @@ const FilterPage = () => {
 
         // Sắp xếp
         sortBy: sortOrder === 'newest' ? 'createdAt' : (sortOrder === 'price_asc' || sortOrder === 'price_desc' ? 'price' : undefined),
-        sortDir: sortOrder === 'newest' ? 'desc' : (sortOrder === 'price_asc' ? 'asc' : 'desc')
+        sortDir: sortOrder === 'newest' ? 'desc' : (sortOrder === 'price_asc' ? 'asc' : 'desc'),
+
       };
 
       const res = await roomService.searchRooms(params);
@@ -473,13 +489,11 @@ const FilterPage = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchRooms(1);
+  }, [selectedProject]);
 
-  const toggleSelection = (list, setList, val) => {
-    const newList = [...list];
-    const idx = newList.indexOf(val);
-    if (idx === -1) newList.push(val); else newList.splice(idx, 1);
-    setList(newList);
-  };
+
 
   const handleApplyLocation = async (locData) => {
     if (!locData.fullText) return;
@@ -515,7 +529,9 @@ const FilterPage = () => {
     if (locData.ward?.name) {
       newParams.ward = locData.ward.name;
     }
-
+    if (selectedProject) {
+      newParams.projectId = selectedProject;
+    }
     setSearchParams(newParams);
 
     appMessage.success({ content: `Đã chọn: ${locData.displayName}`, key: 'geo' });
@@ -537,12 +553,18 @@ const FilterPage = () => {
 
     setFilters(newFilters);
 
-    setSearchParams({
+    const nextParams = {
       locationName: `Gần ${data.name}`,
       lat: data.lat,
       lng: data.lng,
       radius: data.radius
-    });
+    };
+
+    if (selectedProject) {
+      nextParams.projectId = selectedProject;
+    }
+
+    setSearchParams(nextParams);
 
     appMessage.success(`Đã chọn vị trí: ${data.name}`);
     setCurrentPage(1);
@@ -558,7 +580,7 @@ const FilterPage = () => {
     setSelectedFurniture([]);
     setSelectedAmenities([]);
     setSelectedProject(undefined);
-    setTransactionType('FOR_RENT');
+    setTransactionType('ALL');
 
     // Reset bộ lọc chính về Toàn quốc
     const resetFilters = {
@@ -576,16 +598,19 @@ const FilterPage = () => {
     fetchRooms(1, resetFilters);
   };
 
-  // --- RENDER POPUP CONTENT ---
+  const isVipRoom = (room) => {
+    return Boolean(
+      room.isPromoted ||
+      Number(room.priorityLevel || 0) > 0 ||
+      room.promotionPackageId ||
+      room.promotionPackageName
+    );
+  };
 
-
-  // --- RENDER DẠNG DANH SÁCH (LIST VIEW) ---
-  // --- RENDER DẠNG DANH SÁCH (LIST VIEW) ---
   const renderListView = () => (
     <div className="flex flex-col gap-3">
       {rooms.map(room => {
-        // Check VIP từ priorityLevel
-        const isVip = room.priorityLevel && room.priorityLevel > 0;
+        const isVip = isVipRoom(room);
 
         return (
           <Card
@@ -601,14 +626,13 @@ const FilterPage = () => {
               <div className="w-full sm:w-[260px] h-[170px] relative flex-shrink-0">
                 <img src={getImageUrl(room) || 'https://via.placeholder.com/300'} className="h-full w-full object-cover" alt="main" />
 
-                {/* 🟢 TAG VIP ĐỒNG BỘ HOME PAGE */}
+
                 {isVip && (
                   <Tag color="#fadb14" className="absolute top-2 left-2 border-none font-bold text-[10px] m-0 flex items-center gap-1 shadow-sm text-black px-1.5 py-0.5 z-10">
                     <CrownFilled /> VIP
                   </Tag>
                 )}
 
-                {/* 🟢 ICON LỬA (NẾU PRIORITY CAO >= 50) */}
                 {room.priorityLevel >= 50 && (
                   <div className="absolute bottom-2 left-2 text-[#fadb14] animate-bounce drop-shadow-md z-10">
                     <FireFilled style={{ fontSize: '18px' }} />
@@ -654,12 +678,11 @@ const FilterPage = () => {
     </div>
   );
 
-  // --- RENDER DẠNG LƯỚI (GRID VIEW) ---
-  // --- RENDER DẠNG LƯỚI (GRID VIEW) ---
+
   const renderGridView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {rooms.map(room => {
-        const isVip = room.priorityLevel && room.priorityLevel > 0;
+        const isVip = isVipRoom(room);
 
         return (
           <Card
@@ -790,11 +813,16 @@ const FilterPage = () => {
                       keyword: filters.keyword || '',
                       type: filters.type || 'ALL'
                     });
+
+                    if (selectedProject) {
+                      params.set('projectId', selectedProject);
+                    }
+
                     navigate(`/search?${params.toString()}`);
                     return;
                   }
 
-                  // Truyền tất cả params hiện tại sang trang bản đồ
+
                   const params = new URLSearchParams({
                     lat: filters.locationCoords.lat,
                     lng: filters.locationCoords.lng,
@@ -802,6 +830,11 @@ const FilterPage = () => {
                     keyword: filters.keyword || '',
                     type: filters.type || 'ALL'
                   });
+
+                  if (selectedProject) {
+                    params.set('projectId', selectedProject);
+                  }
+
                   navigate(`/search?${params.toString()}`);
                 }}
                 className="flex items-center h-[48px] border-[#f96302] text-[#f96302] hover:bg-orange-50 font-medium px-6 rounded-lg"
@@ -846,7 +879,20 @@ const FilterPage = () => {
                 footer={
                   <div className="flex gap-3">
                     <Button className="flex-1" onClick={handleResetAll}>Xóa lọc</Button>
-                    <Button type="primary" className="flex-1 bg-[#f96302] border-none" onClick={() => { setOpenFilterDrawer(false); setCurrentPage(1); fetchRooms(1); }}>Áp dụng</Button>
+                    <Button type="primary" className="flex-1 bg-[#f96302] border-none" onClick={() => {
+                      setOpenFilterDrawer(false);
+                      setCurrentPage(1);
+
+                      const nextParams = new URLSearchParams(searchParams);
+                      if (selectedProject) {
+                        nextParams.set('projectId', selectedProject);
+                      } else {
+                        nextParams.delete('projectId');
+                      }
+                      setSearchParams(nextParams);
+
+                      fetchRooms(1);
+                    }}>Áp dụng</Button>
                   </div>
                 }
               >
@@ -897,7 +943,18 @@ const FilterPage = () => {
                     className="w-full"
                     size="large"
                     value={selectedProject}
-                    onChange={(val) => setSelectedProject(val)}
+                    onChange={(val) => {
+                      setSelectedProject(val);
+
+                      const nextParams = new URLSearchParams(searchParams);
+                      if (val) {
+                        nextParams.set('projectId', val);
+                      } else {
+                        nextParams.delete('projectId');
+                      }
+
+                      setSearchParams(nextParams);
+                    }}
                     optionFilterProp="children"
                   >
                     {projectsList.map(p => (

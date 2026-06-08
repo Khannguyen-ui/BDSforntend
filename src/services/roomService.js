@@ -84,7 +84,7 @@ const roomService = {
   // 5. Master data
   getAllAmenities: () => axiosClient.get('/amenities'),
   getAllPackages: () => axiosClient.get('/api/admin/packages/active'),
-  getPublicProjects: () => axiosClient.get('/public/projects', { params: { page: 0, size: 100 } }),
+
 
   // 6. Chi tiết phòng (Handle ApiResponse)
   getRoomById: async (id) => {
@@ -179,8 +179,12 @@ const roomService = {
 
         const fallbackData = fallbackRes.data?.result || fallbackRes.data?.data || fallbackRes.data;
         let content = fallbackData.content || [];
+        if (validParams.projectId) {
+          content = content.filter(item =>
+            Number(item.projectId) === Number(validParams.projectId)
+          );
+        }
 
-        // Sắp xếp lại để đưa tin đẩy/mới lên đầu
         content = [...content].sort((a, b) => {
           const priorityA = a.priorityLevel || (a.isPromoted ? 100 : 0);
           const priorityB = b.priorityLevel || (b.isPromoted ? 100 : 0);
@@ -267,7 +271,11 @@ const roomService = {
   toggleAutoRenew: (roomId, enable) => {
     return axiosClient.put(`/properties/${roomId}/auto-renew`, null, { params: { enable } });
   },
-
+  getPublicProjects: (page = 0, size = 100) => {
+    return axiosClient.get('/public/projects', {
+      params: { page, size }
+    });
+  },
   getPublicProjectDetail: (projectId) => {
     return axiosClient.get(`/public/projects/${projectId}`);
   },
