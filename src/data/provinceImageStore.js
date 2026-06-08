@@ -5,12 +5,13 @@ const DEFAULT_IMAGE = '/images/provinces/default.jpg';
 const normalizeText = (value = '') => {
   return String(value)
     .toLowerCase()
-    .replace(/^tỉnh\s+/i, '')
-    .replace(/^thành phố\s+/i, '')
-    .replace(/^tp\.?\s+/i, '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
+    .replace(/-/g, ' ')
+    .replace(/^tinh\s+/i, '')
+    .replace(/^thanh pho\s+/i, '')
+    .replace(/^tp\.?\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim();
 };
