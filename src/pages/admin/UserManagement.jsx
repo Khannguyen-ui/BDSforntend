@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Table, Card, Input, Tag, Button, Avatar, Typography, Tooltip,
   message, Popconfirm, Space, Modal, Tabs, Image, Row, Col,
-  Drawer, Statistic, Empty, Descriptions, Alert
+  Drawer, Statistic, Empty, Descriptions, Alert, Select
 } from 'antd';
 import {
   SearchOutlined, UserOutlined, LockOutlined, UnlockOutlined,
   DeleteOutlined, EyeOutlined, CheckCircleOutlined, ReloadOutlined,
   CrownOutlined, FileTextOutlined, DollarOutlined
 } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 
 import adminService from '../../services/adminService';
 import dayjs from 'dayjs';
@@ -33,6 +34,12 @@ const UserManagement = () => {
   const [userProperties, setUserProperties] = useState([]);
   const [userTransactions, setUserTransactions] = useState([]);
   const [userSubscription, setUserSubscription] = useState(null);
+
+  const [propertyStatusFilter, setPropertyStatusFilter] = useState('ALL');
+  const [propertyProjectFilter, setPropertyProjectFilter] = useState('ALL');
+
+  const [searchParams] = useSearchParams();
+  const [openedUserIdFromUrl, setOpenedUserIdFromUrl] = useState(null);
 
   // --- LOAD DỮ LIỆU ---
   const fetchUsers = async () => {
@@ -88,6 +95,67 @@ const UserManagement = () => {
     if (!date) return false;
     return dayjs(date).isAfter(dayjs());
   };
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'green';
+      case 'PENDING':
+        return 'orange';
+      case 'REJECTED':
+        return 'red';
+      case 'DELETED':
+        return 'default';
+      case 'RENTED':
+        return 'purple';
+      default:
+        return 'blue';
+    }
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'red';
+      case 'OWNER':
+        return 'green';
+      case 'USER':
+        return 'blue';
+      default:
+        return 'default';
+    }
+  };
+
+  const getKycColor = (status) => {
+    switch (status) {
+      case 'VERIFIED':
+        return 'green';
+      case 'PENDING':
+        return 'orange';
+      case 'REJECTED':
+        return 'red';
+      default:
+        return 'default';
+    }
+  };
+
+  const formatDateTime = (value) => {
+    return value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '--';
+  };
+
+  const safeText = (value, fallback = '--') => {
+    return value !== null && value !== undefined && value !== '' ? value : fallback;
+  };
+
+  const getPropertyMainImage = (record) => {
+    if (Array.isArray(record.images) && record.images.length > 0) {
+      return record.images[0];
+    }
+
+    if (record.imageUrl) return record.imageUrl;
+    if (record.thumbnail) return record.thumbnail;
+
+    return null;
+  };
 
   const handleDisableUser = async (id) => {
     try {
@@ -132,6 +200,19 @@ const UserManagement = () => {
       setDetailLoading(false);
     }
   };
+  useEffect(() => {
+    const userIdFromUrl = searchParams.get('userId');
+
+    if (!userIdFromUrl || users.length === 0) return;
+    if (openedUserIdFromUrl === userIdFromUrl) return;
+
+    const foundUser = users.find(user => Number(user.id) === Number(userIdFromUrl));
+
+    if (foundUser) {
+      setOpenedUserIdFromUrl(userIdFromUrl);
+      openUserDetail(foundUser);
+    }
+  }, [searchParams, users, openedUserIdFromUrl]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -229,7 +310,34 @@ const UserManagement = () => {
         imgs = [rawImgs];
       }
     }
+    const propertyProjects = Array.from(
+      new Map(
+        userProperties
+          .filter(item => item.projectId && item.projectNameSnapshot)
+          .map(item => [
+            item.projectId,
+            {
+              id: item.projectId,
+              name: item.projectNameSnapshot
+            }
+          ])
+      ).values()
+    );
 
+    const propertyStatusOptions = Array.from(
+      new Set(userProperties.map(item => item.status).filter(Boolean))
+    );
+
+    const filteredUserProperties = userProperties.filter(item => {
+      const matchStatus =
+        propertyStatusFilter === 'ALL' || item.status === propertyStatusFilter;
+
+      const matchProject =
+        propertyProjectFilter === 'ALL' ||
+        Number(item.projectId) === Number(propertyProjectFilter);
+
+      return matchStatus && matchProject;
+    });
     return (
       <div>
         <div className="bg-gray-50 p-3 rounded mb-4 border">
@@ -480,12 +588,12 @@ const UserManagement = () => {
                         <Descriptions.Item label="Họ tên">{selectedUser.fullName || 'Chưa cập nhật'}</Descriptions.Item>
                         <Descriptions.Item label="Email">{selectedUser.email}</Descriptions.Item>
                         <Descriptions.Item label="Vai trò">
-                          <Tag color={selectedUser.role === 'OWNER' ? 'green' : selectedUser.role === 'ADMIN' ? 'red' : 'blue'}>
+                          <Tag color={getRoleColor(selectedUser.role)}>
                             {selectedUser.role}
                           </Tag>
                         </Descriptions.Item>
                         <Descriptions.Item label="KYC">
-                          <Tag color={selectedUser.kycStatus === 'VERIFIED' ? 'green' : selectedUser.kycStatus === 'PENDING' ? 'orange' : 'default'}>
+                          <Tag color={getKycColor(selectedUser.kycStatus)}>
                             {selectedUser.kycStatus || 'UNVERIFIED'}
                           </Tag>
                         </Descriptions.Item>
@@ -539,55 +647,181 @@ const UserManagement = () => {
                 },
                 {
                   key: 'properties',
-                  label: 'Tin đăng',
+                  label: `Tin đăng (${userProperties.length})`,
                   children: (
-                    <Table
-                      loading={detailLoading}
-                      rowKey="id"
-                      dataSource={userProperties}
-                      pagination={{ pageSize: 5 }}
-                      columns={[
-                        {
-                          title: 'Tin đăng',
-                          render: (_, record) => (
-                            <div>
-                              <div className="font-semibold">{record.title}</div>
-                              <Text type="secondary" className="text-xs">{record.address}</Text>
-                            </div>
-                          )
-                        },
-                        {
-                          title: 'Trạng thái',
-                          dataIndex: 'status',
-                          render: status => <Tag>{status}</Tag>
-                        },
-                        {
-                          title: 'Giá',
-                          dataIndex: 'price',
-                          render: price => formatMoney(price)
-                        },
-                        {
-                          title: 'Gói đẩy',
-                          render: (_, record) => (
-                            record.isPromoted ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-3 items-center">
+                        <Select
+                          value={propertyStatusFilter}
+                          onChange={setPropertyStatusFilter}
+                          style={{ width: 180 }}
+                          options={[
+                            { value: 'ALL', label: 'Tất cả trạng thái' },
+                            ...propertyStatusOptions.map(status => ({
+                              value: status,
+                              label: status
+                            }))
+                          ]}
+                        />
+
+                        <Select
+                          value={propertyProjectFilter}
+                          onChange={setPropertyProjectFilter}
+                          style={{ width: 220 }}
+                          options={[
+                            { value: 'ALL', label: 'Tất cả dự án' },
+                            ...propertyProjects.map(project => ({
+                              value: project.id,
+                              label: project.name
+                            }))
+                          ]}
+                        />
+
+                        {(propertyStatusFilter !== 'ALL' || propertyProjectFilter !== 'ALL') && (
+                          <Button
+                            onClick={() => {
+                              setPropertyStatusFilter('ALL');
+                              setPropertyProjectFilter('ALL');
+                            }}
+                          >
+                            Bỏ lọc
+                          </Button>
+                        )}
+                      </div>
+
+                      <Table
+                        loading={detailLoading}
+                        rowKey="id"
+                        dataSource={filteredUserProperties}
+                        pagination={{ pageSize: 5 }}
+                        locale={{ emptyText: 'Người dùng này chưa có tin đăng phù hợp' }}
+                        columns={[
+                          {
+                            title: 'Tin đăng',
+                            width: 320,
+                            render: (_, record) => {
+                              const img = getPropertyMainImage(record);
+
+                              return (
+                                <div className="flex gap-3">
+                                  {img ? (
+                                    <Image
+                                      src={img}
+                                      width={72}
+                                      height={54}
+                                      className="object-cover rounded border"
+                                      fallback="https://via.placeholder.com/120x90?text=No+Image"
+                                    />
+                                  ) : (
+                                    <div className="w-[72px] h-[54px] rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                                      No Image
+                                    </div>
+                                  )}
+
+                                  <div>
+                                    <div className="font-semibold line-clamp-1">
+                                      {safeText(record.title, 'Không có tiêu đề')}
+                                    </div>
+
+                                    <Text type="secondary" className="text-xs line-clamp-2">
+                                      {safeText(record.address, 'Chưa có địa chỉ')}
+                                    </Text>
+
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {record.transactionType && <Tag>{record.transactionType}</Tag>}
+                                      {record.propertyType && <Tag color="blue">{record.propertyType}</Tag>}
+                                      {record.videoUrl && <Tag color="purple">Có video</Tag>}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          },
+                          {
+                            title: 'Trạng thái',
+                            dataIndex: 'status',
+                            width: 130,
+                            render: status => (
+                              <Tag color={getStatusColor(status)}>
+                                {safeText(status)}
+                              </Tag>
+                            )
+                          },
+                          {
+                            title: 'Giá / Diện tích',
+                            width: 160,
+                            render: (_, record) => (
                               <div>
-                                <Tag color="orange">{record.promotionPackageName || 'Đang đẩy'}</Tag>
+                                <div className="font-semibold text-red-600">
+                                  {record.price ? formatMoney(record.price) : 'Thỏa thuận'}
+                                </div>
+                                <Text type="secondary" className="text-xs">
+                                  {record.area ? `${record.area} m²` : '--'}
+                                </Text>
+                              </div>
+                            )
+                          },
+                          {
+                            title: 'Dự án',
+                            width: 180,
+                            render: (_, record) => (
+                              record.projectId ? (
+                                <Tag color="geekblue">
+                                  {record.projectNameSnapshot || `Dự án #${record.projectId}`}
+                                </Tag>
+                              ) : (
+                                <span className="text-gray-400">Không thuộc dự án</span>
+                              )
+                            )
+                          },
+                          {
+                            title: 'Gói đẩy',
+                            width: 180,
+                            render: (_, record) => {
+                              if (!record.isPromoted) return <Tag>Không</Tag>;
+
+                              const active = isActiveDate(record.promotionExpiresAt);
+
+                              return (
+                                <div>
+                                  <Tag color={active ? 'orange' : 'default'}>
+                                    {record.promotionPackageName || 'Đang đẩy'}
+                                  </Tag>
+                                  <div className="text-xs text-gray-500">
+                                    Hết hạn: {formatDateTime(record.promotionExpiresAt)}
+                                  </div>
+                                </div>
+                              );
+                            }
+                          },
+                          {
+                            title: 'Thời hạn',
+                            width: 170,
+                            render: (_, record) => (
+                              <div>
+                                <div className="text-xs">
+                                  Tạo: {formatDateTime(record.createdAt)}
+                                </div>
                                 <div className="text-xs text-gray-500">
-                                  Hết hạn: {record.promotionExpiresAt ? dayjs(record.promotionExpiresAt).format('DD/MM/YYYY HH:mm') : '--'}
+                                  Hết hạn: {formatDateTime(record.expiresAt)}
                                 </div>
                               </div>
-                            ) : (
-                              <Tag>Không</Tag>
                             )
-                          )
-                        },
-                        {
-                          title: 'Hết hạn tin',
-                          dataIndex: 'expiresAt',
-                          render: value => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '--'
-                        }
-                      ]}
-                    />
+                          },
+                          {
+                            title: 'Xem',
+                            width: 90,
+                            render: (_, record) => (
+                              <a href={`/rooms/${record.id}`} target="_blank" rel="noopener noreferrer">
+                                <Button size="small" icon={<EyeOutlined />}>
+                                  Xem
+                                </Button>
+                              </a>
+                            )
+                          }
+                        ]}
+                      />
+                    </div>
                   )
                 },
                 {

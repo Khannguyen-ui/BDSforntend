@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Tag, Space, Tabs, Popconfirm, message, Image, Tooltip, Select } from 'antd';
-import { DeleteOutlined, UndoOutlined, StopOutlined, EyeOutlined, BankOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined, UndoOutlined, StopOutlined, EyeOutlined,
+  BankOutlined, UserOutlined
+} from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import { getImageUrl } from '../../utils/imageHelper';
 import dayjs from 'dayjs';
 
-const { TabPane } = Tabs;
+
 
 const RoomManagement = () => {
   const navigate = useNavigate();
@@ -24,14 +27,24 @@ const RoomManagement = () => {
     }
   }, [searchParams]);
 
-  // Fetch dữ liệu tin đang hoạt động
+  const normalizePageData = (res) => {
+    const raw =
+      res?.data?.result?.content ||
+      res?.data?.content ||
+      res?.data?.data?.content ||
+      res?.data?.result ||
+      res?.data?.data ||
+      [];
+
+    return Array.isArray(raw) ? raw : [];
+  };
+
   const fetchActiveRooms = async () => {
     setLoading(true);
     try {
       // Lấy danh sách phòng, có thể bỏ status để lấy tất cả hoặc lấy những tin KHÔNG TRONG THÙNG RÁC
       const res = await adminService.getAllProperties(0, 100);
-      const data = res.data?.content || res.data?.result || res.data?.data || [];
-      setActiveRooms(data);
+      setActiveRooms(normalizePageData(res));
     } catch (error) {
       console.error(error);
       message.error('Lỗi tải danh sách phòng');
@@ -61,8 +74,7 @@ const RoomManagement = () => {
     setLoading(true);
     try {
       const res = await adminService.getTrashProperties(0, 100);
-      const data = res.data?.content || res.data?.result || res.data?.data || [];
-      setTrashRooms(data);
+      setTrashRooms(normalizePageData(res));
     } catch (error) {
       console.error(error);
       message.error('Lỗi tải dữ liệu thùng rác');
@@ -165,7 +177,25 @@ const RoomManagement = () => {
         return <Tag color={color}>{status}</Tag>;
       }
     },
-    { title: 'Chủ trọ (ID)', dataIndex: 'ownerId', render: (id) => `ID: ${id}` },
+    {
+      title: 'Chủ bài viết',
+      dataIndex: 'ownerId',
+      width: 180,
+      render: (_, record) => (
+        record.ownerId ? (
+          <Tag
+            color="geekblue"
+            icon={<UserOutlined />}
+            className="cursor-pointer"
+            onClick={() => navigate(`/admin/users?userId=${record.ownerId}`)}
+          >
+            {record.ownerNameSnapshot || `ID: ${record.ownerId}`}
+          </Tag>
+        ) : (
+          <span className="text-gray-400">Không rõ</span>
+        )
+      )
+    },
     {
       title: 'Hành động',
       render: (_, record) => (
@@ -216,7 +246,25 @@ const RoomManagement = () => {
         <span className="text-gray-400">Không thuộc dự án</span>
       )
     },
-    { title: 'Chủ trọ (ID)', dataIndex: 'ownerId', render: (id) => `ID: ${id}` },
+    {
+      title: 'Chủ trọ',
+      dataIndex: 'ownerId',
+      width: 180,
+      render: (_, record) => (
+        record.ownerId ? (
+          <Tag
+            color="geekblue"
+            icon={<UserOutlined />}
+            className="cursor-pointer"
+            onClick={() => navigate(`/admin/users?userId=${record.ownerId}`)}
+          >
+            {record.ownerNameSnapshot || `ID: ${record.ownerId}`}
+          </Tag>
+        ) : (
+          <span className="text-gray-400">Không rõ</span>
+        )
+      )
+    },
     { title: 'Ngày tạo', dataIndex: 'createdAt', render: (val) => val ? dayjs(val).format('DD/MM/YYYY') : '' },
     {
       title: 'Hành động',
@@ -275,24 +323,41 @@ const RoomManagement = () => {
           </Button>
         )}
       </div>
-      <Tabs defaultActiveKey="1" onChange={(key) => setActiveTab(key)} type="card">
-        <TabPane tab={<span className="font-medium">Tin Đang Hoạt Động</span>} key="1">
-          <Table
-            dataSource={filteredActiveRooms}
-            columns={activeColumns}
-            rowKey="id"
-            loading={loading && activeTab === '1'}
-          />
-        </TabPane>
-        <TabPane tab={<span className="font-medium text-red-500"><DeleteOutlined /> Thùng Rác</span>} key="2">
-          <Table
-            dataSource={filteredTrashRooms}
-            columns={trashColumns}
-            rowKey="id"
-            loading={loading && activeTab === '2'}
-          />
-        </TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        type="card"
+        items={[
+          {
+            key: '1',
+            label: <span className="font-medium">Tin Đang Hoạt Động</span>,
+            children: (
+              <Table
+                dataSource={Array.isArray(filteredActiveRooms) ? filteredActiveRooms : []}
+                columns={activeColumns}
+                rowKey="id"
+                loading={loading && activeTab === '1'}
+              />
+            )
+          },
+          {
+            key: '2',
+            label: (
+              <span className="font-medium text-red-500">
+                <DeleteOutlined /> Thùng Rác
+              </span>
+            ),
+            children: (
+              <Table
+                dataSource={Array.isArray(filteredTrashRooms) ? filteredTrashRooms : []}
+                columns={trashColumns}
+                rowKey="id"
+                loading={loading && activeTab === '2'}
+              />
+            )
+          }
+        ]}
+      />
     </div>
   );
 };
