@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import {
   Table, Card, Input, Tag, Button, Avatar, Typography, Tooltip,
-  message, Popconfirm, Space, Modal, Form, Select, Tabs, Image, Row, Col
+  message, Popconfirm, Space, Modal, Tabs, Image, Row, Col,
+  Drawer, Statistic, Empty, Descriptions, Alert
 } from 'antd';
 import {
   SearchOutlined, UserOutlined, LockOutlined, UnlockOutlined,
-  PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined,
-  CheckCircleOutlined,
-  ReloadOutlined
+  DeleteOutlined, EyeOutlined, CheckCircleOutlined, ReloadOutlined,
+  CrownOutlined, FileTextOutlined, DollarOutlined
 } from '@ant-design/icons';
 
-// --- 1. SỬA IMPORT: Dùng adminService ---
 import adminService from '../../services/adminService';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
 const UserManagement = () => {
@@ -24,16 +22,17 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  // State CRUD
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [form] = Form.useForm();
-
-  // State KYC
   const [isKycModalOpen, setIsKycModalOpen] = useState(false);
   const [selectedKycUser, setSelectedKycUser] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processingKyc, setProcessingKyc] = useState(false);
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [userProperties, setUserProperties] = useState([]);
+  const [userTransactions, setUserTransactions] = useState([]);
+  const [userSubscription, setUserSubscription] = useState(null);
 
   // --- LOAD DỮ LIỆU ---
   const fetchUsers = async () => {
@@ -57,56 +56,90 @@ const UserManagement = () => {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+  const normalizePageData = (res) => {
+    const raw =
+      res?.data?.result?.content ||
+      res?.data?.content ||
+      res?.data?.result ||
+      res?.data ||
+      [];
 
-  // --- CRUD USER ---
-  const handleOpenModal = (user = null) => {
-    setEditingUser(user);
-    if (user) {
-      form.setFieldsValue({ ...user, password: '' });
-    } else {
-      form.resetFields();
-    }
-    setIsModalOpen(true);
+    return Array.isArray(raw) ? raw : [];
   };
 
-  const handleSaveUser = async (values) => {
-    try {
-      if (editingUser) {
-        if (!values.password) delete values.password;
-        // Gọi adminService.updateUser
-        await adminService.updateUser(editingUser.id, values);
-        message.success("Cập nhật thành công!");
-      } else {
-        // Gọi adminService.createUser
-        await adminService.createUser(values);
-        message.success("Thêm người dùng thành công!");
-      }
-      setIsModalOpen(false);
-      fetchUsers();
-    } catch (error) {
-      message.error(editingUser ? "Cập nhật thất bại" : "Thêm mới thất bại");
-    }
+  const normalizeArrayData = (res) => {
+    const raw =
+      res?.data?.result ||
+      res?.data?.content ||
+      res?.data ||
+      [];
+
+    return Array.isArray(raw) ? raw : [];
   };
 
-  const handleDelete = async (id) => {
+  const formatMoney = (value) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(Number(value || 0));
+  };
+
+  const isActiveDate = (date) => {
+    if (!date) return false;
+    return dayjs(date).isAfter(dayjs());
+  };
+
+  const handleDisableUser = async (id) => {
     try {
-      // Gọi adminService.deleteUser
       await adminService.deleteUser(id);
-      message.success("Đã xóa tài khoản");
+      message.success("Đã vô hiệu hóa tài khoản");
       fetchUsers();
     } catch (error) {
-      message.error("Xóa thất bại");
+      message.error(error.response?.data?.message || "Vô hiệu hóa thất bại");
+    }
+  };
+  const openUserDetail = async (user) => {
+    setSelectedUser(user);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setUserProperties([]);
+    setUserTransactions([]);
+    setUserSubscription(null);
+
+    try {
+      const [propertiesRes, transactionsRes, subscriptionRes] = await Promise.allSettled([
+        adminService.getUserProperties(user.id),
+        adminService.getUserTransactions(user.id),
+        adminService.getUserSubscriptions(user.id)
+      ]);
+
+      if (propertiesRes.status === 'fulfilled') {
+        setUserProperties(normalizePageData(propertiesRes.value));
+      }
+
+      if (transactionsRes.status === 'fulfilled') {
+        setUserTransactions(normalizeArrayData(transactionsRes.value));
+      }
+
+      if (subscriptionRes.status === 'fulfilled') {
+        const data = subscriptionRes.value?.data?.result || subscriptionRes.value?.data;
+        setUserSubscription(data || null);
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('Không thể tải chi tiết người dùng');
+    } finally {
+      setDetailLoading(false);
     }
   };
 
   const handleToggleStatus = async (user) => {
     try {
-      // Gọi adminService.toggleUserStatus
       await adminService.toggleUserStatus(user.id);
-      message.success("Cập nhật trạng thái thành công");
+      message.success(user.active ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
       fetchUsers();
     } catch (error) {
-      message.error("Lỗi cập nhật trạng thái");
+      message.error(error.response?.data?.message || "Lỗi cập nhật trạng thái");
     }
   };
 
@@ -149,13 +182,38 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error) {
       console.error("KYC Error:", error.response?.data);
-      message.error("❌ Lỗi: " + (error.response?.data?.message || "Thử lại"));
+      message.error(" Lỗi: " + (error.response?.data?.message || "Thử lại"));
     } finally {
       setProcessingKyc(false);
     }
   };
+  const userSummary = (() => {
+    const activeProperties = userProperties.filter(p => p.status === 'ACTIVE');
+    const pendingProperties = userProperties.filter(p => p.status === 'PENDING');
+    const rejectedProperties = userProperties.filter(p => p.status === 'REJECTED');
 
-  // --- Render Nội dung Modal KYC ---
+    const promotedProperties = userProperties.filter(p =>
+      p.isPromoted && isActiveDate(p.promotionExpiresAt)
+    );
+
+    const successTransactions = userTransactions.filter(t => t.status === 'SUCCESS');
+
+    const totalSpent = successTransactions
+      .filter(t => ['PURCHASE_PACKAGE', 'ROOM_PROMOTION', 'PUSH_ROOM', 'MEMBERSHIP', 'POST_FEE', 'DEDUCTION'].includes(t.type))
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    return {
+      totalProperties: userProperties.length,
+      activeProperties: activeProperties.length,
+      pendingProperties: pendingProperties.length,
+      rejectedProperties: rejectedProperties.length,
+      promotedProperties: promotedProperties.length,
+      totalTransactions: successTransactions.length,
+      totalSpent
+    };
+  })();
+
+
   const renderKycContent = () => {
     if (!selectedKycUser) return null;
 
@@ -215,6 +273,7 @@ const UserManagement = () => {
 
   // --- CẤU HÌNH CỘT ---
   const userColumns = [
+
     {
       title: 'Thành viên',
       dataIndex: 'fullName',
@@ -250,28 +309,65 @@ const UserManagement = () => {
       title: 'Hành động',
       align: 'right',
       render: (_, record) => (
-        <Space>
-          <Tooltip title="Sửa"><Button icon={<EditOutlined />} size="small" onClick={() => handleOpenModal(record)} /></Tooltip>
+        <Space wrap>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => openUserDetail(record)}
+            >
+              Chi tiết
+            </Button>
+          </Tooltip>
           {record.role !== 'ADMIN' && (
-            <Popconfirm title="Cấp quyền Admin?" onConfirm={() => handlePromote(record)}>
-              <Tooltip title="Cấp quyền Admin">
-                <Button size="small" icon={<UserOutlined />} className="text-blue-500 border-blue-500 hover:bg-blue-50" />
-              </Tooltip>
+            <Popconfirm
+              title={record.active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?"}
+              onConfirm={() => handleToggleStatus(record)}
+              okText="Xác nhận"
+              cancelText="Hủy"
+            >
+              <Button
+                size="small"
+                danger={record.active}
+                icon={record.active ? <LockOutlined /> : <UnlockOutlined />}
+              >
+                {record.active ? 'Khóa' : 'Mở khóa'}
+              </Button>
             </Popconfirm>
           )}
+
           {record.role !== 'ADMIN' && (
-            <Popconfirm title="Đổi trạng thái?" onConfirm={() => handleToggleStatus(record)}>
-              <Button size="small" danger={record.active} icon={record.active ? <LockOutlined /> : <UnlockOutlined />} />
+            <Popconfirm
+              title="Cấp quyền Admin?"
+              description="Thao tác này có rủi ro bảo mật. Chỉ thực hiện nếu chắc chắn."
+              onConfirm={() => handlePromote(record)}
+              okText="Cấp quyền"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button size="small" icon={<UserOutlined />} className="text-blue-500 border-blue-500 hover:bg-blue-50">
+                Cấp Admin
+              </Button>
             </Popconfirm>
           )}
-          {record.role !== 'ADMIN' && (
-            <Popconfirm title="Xóa vĩnh viễn?" onConfirm={() => handleDelete(record.id)}>
-              <Button danger icon={<DeleteOutlined />} size="small" />
+
+          {record.role !== 'ADMIN' && record.active && (
+            <Popconfirm
+              title="Vô hiệu hóa tài khoản?"
+              description="Tài khoản sẽ bị khóa, dữ liệu lịch sử vẫn được giữ lại."
+              onConfirm={() => handleDisableUser(record.id)}
+              okText="Vô hiệu hóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger icon={<DeleteOutlined />} size="small">
+                Vô hiệu hóa
+              </Button>
             </Popconfirm>
           )}
         </Space>
       ),
-    },
+    }
   ];
 
   const kycColumns = [
@@ -293,10 +389,17 @@ const UserManagement = () => {
     }
   ];
 
-  const filteredUsers = users.filter(user =>
-    user.fullName?.toLowerCase().includes(searchText.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const keyword = searchText.toLowerCase().trim();
+
+    if (!keyword) return true;
+
+    return (
+      String(user.fullName || '').toLowerCase().includes(keyword) ||
+      String(user.email || '').toLowerCase().includes(keyword) ||
+      String(user.id || '').includes(keyword)
+    );
+  });
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -315,7 +418,7 @@ const UserManagement = () => {
               style={{ width: 250 }}
             />
             <Button icon={<ReloadOutlined />} onClick={fetchUsers}>Làm mới</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal(null)}>Thêm User</Button>
+
           </Space>
         </div>
 
@@ -354,31 +457,253 @@ const UserManagement = () => {
             }
           ]} />
         </Card>
-
-        {/* MODAL USER CRUD */}
-        <Modal
-          title={editingUser ? "Cập Nhật User" : "Thêm User Mới"}
-          open={isModalOpen}
-          onCancel={() => setIsModalOpen(false)}
-          onOk={() => form.submit()}
-          okText="Lưu"
+        <Drawer
+          title={`Chi tiết người dùng${selectedUser?.fullName ? ` - ${selectedUser.fullName}` : ''}`}
+          open={detailOpen}
+          onClose={() => setDetailOpen(false)}
+          width={1000}
+          destroyOnHidden
         >
-          <Form form={form} layout="vertical" onFinish={handleSaveUser}>
-            <Form.Item name="fullName" label="Họ tên" rules={[{ required: true }]}><Input /></Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input disabled={!!editingUser} /></Form.Item>
-            <Form.Item name="phone" label="SĐT"><Input /></Form.Item>
-            <Form.Item name="role" label="Vai trò" initialValue="USER">
-              <Select>
-                <Option value="USER">Người dùng</Option>
-                <Option value="OWNER">Mô giới</Option>
-                <Option value="ADMIN">Admin</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="password" label="Mật khẩu" rules={[{ required: !editingUser }]}><Input.Password placeholder={editingUser ? "Nhập nếu muốn đổi" : ""} /></Form.Item>
-          </Form>
-        </Modal>
+          {!selectedUser ? (
+            <Empty description="Không có dữ liệu người dùng" />
+          ) : (
+            <Tabs
+              defaultActiveKey="overview"
+              items={[
+                {
+                  key: 'overview',
+                  label: 'Tổng quan',
+                  children: (
+                    <div className="space-y-4">
+                      <Descriptions bordered size="small" column={2}>
+                        <Descriptions.Item label="ID">{selectedUser.id}</Descriptions.Item>
+                        <Descriptions.Item label="Họ tên">{selectedUser.fullName || 'Chưa cập nhật'}</Descriptions.Item>
+                        <Descriptions.Item label="Email">{selectedUser.email}</Descriptions.Item>
+                        <Descriptions.Item label="Vai trò">
+                          <Tag color={selectedUser.role === 'OWNER' ? 'green' : selectedUser.role === 'ADMIN' ? 'red' : 'blue'}>
+                            {selectedUser.role}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="KYC">
+                          <Tag color={selectedUser.kycStatus === 'VERIFIED' ? 'green' : selectedUser.kycStatus === 'PENDING' ? 'orange' : 'default'}>
+                            {selectedUser.kycStatus || 'UNVERIFIED'}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Trạng thái">
+                          <Tag color={selectedUser.active ? 'green' : 'red'}>
+                            {selectedUser.active ? 'Đang hoạt động' : 'Đã khóa'}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Lượt đăng còn lại">
+                          {selectedUser.freePostsRemaining ?? 0}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Ngày tạo">
+                          {selectedUser.createdAt ? dayjs(selectedUser.createdAt).format('DD/MM/YYYY HH:mm') : '--'}
+                        </Descriptions.Item>
+                      </Descriptions>
 
-        {/* MODAL DUYỆT KYC */}
+                      <Row gutter={[16, 16]}>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Tổng tin" value={userSummary.totalProperties} prefix={<FileTextOutlined />} />
+                          </Card>
+                        </Col>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Đang hoạt động" value={userSummary.activeProperties} />
+                          </Card>
+                        </Col>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Chờ duyệt" value={userSummary.pendingProperties} />
+                          </Card>
+                        </Col>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Đang đẩy tin" value={userSummary.promotedProperties} prefix={<CrownOutlined />} />
+                          </Card>
+                        </Col>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Giao dịch thành công" value={userSummary.totalTransactions} prefix={<DollarOutlined />} />
+                          </Card>
+                        </Col>
+                        <Col xs={12} md={6}>
+                          <Card>
+                            <Statistic title="Tổng đã chi" value={userSummary.totalSpent} formatter={(v) => formatMoney(v)} />
+                          </Card>
+                        </Col>
+                      </Row>
+                    </div>
+                  )
+                },
+                {
+                  key: 'properties',
+                  label: 'Tin đăng',
+                  children: (
+                    <Table
+                      loading={detailLoading}
+                      rowKey="id"
+                      dataSource={userProperties}
+                      pagination={{ pageSize: 5 }}
+                      columns={[
+                        {
+                          title: 'Tin đăng',
+                          render: (_, record) => (
+                            <div>
+                              <div className="font-semibold">{record.title}</div>
+                              <Text type="secondary" className="text-xs">{record.address}</Text>
+                            </div>
+                          )
+                        },
+                        {
+                          title: 'Trạng thái',
+                          dataIndex: 'status',
+                          render: status => <Tag>{status}</Tag>
+                        },
+                        {
+                          title: 'Giá',
+                          dataIndex: 'price',
+                          render: price => formatMoney(price)
+                        },
+                        {
+                          title: 'Gói đẩy',
+                          render: (_, record) => (
+                            record.isPromoted ? (
+                              <div>
+                                <Tag color="orange">{record.promotionPackageName || 'Đang đẩy'}</Tag>
+                                <div className="text-xs text-gray-500">
+                                  Hết hạn: {record.promotionExpiresAt ? dayjs(record.promotionExpiresAt).format('DD/MM/YYYY HH:mm') : '--'}
+                                </div>
+                              </div>
+                            ) : (
+                              <Tag>Không</Tag>
+                            )
+                          )
+                        },
+                        {
+                          title: 'Hết hạn tin',
+                          dataIndex: 'expiresAt',
+                          render: value => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '--'
+                        }
+                      ]}
+                    />
+                  )
+                },
+                {
+                  key: 'subscriptions',
+                  label: 'Gói cước & giao dịch',
+                  children: (
+                    <div className="space-y-4">
+                      {userSubscription?.membership ? (
+                        <Card title="Gói hội viên hiện tại">
+                          <Descriptions bordered size="small" column={2}>
+                            <Descriptions.Item label="Tên gói">
+                              {userSubscription.membership.packageName || '--'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Loại gói">
+                              {userSubscription.membership.packageType || '--'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Số tiền">
+                              {formatMoney(userSubscription.membership.amount)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Ngày mua">
+                              {userSubscription.membership.purchasedAt
+                                ? dayjs(userSubscription.membership.purchasedAt).format('DD/MM/YYYY HH:mm')
+                                : userSubscription.membership.startedAt
+                                  ? dayjs(userSubscription.membership.startedAt).format('DD/MM/YYYY HH:mm')
+                                  : '--'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Hết hạn">
+                              {userSubscription.membership.expiresAt
+                                ? dayjs(userSubscription.membership.expiresAt).format('DD/MM/YYYY HH:mm')
+                                : userSubscription.membership.estimatedExpiresAt
+                                  ? dayjs(userSubscription.membership.estimatedExpiresAt).format('DD/MM/YYYY HH:mm')
+                                  : '--'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Trạng thái">
+                              <Tag color={userSubscription.membership.active ? 'green' : 'red'}>
+                                {userSubscription.membership.active ? 'Còn hiệu lực' : 'Hết hạn'}
+                              </Tag>
+                            </Descriptions.Item>
+                          </Descriptions>
+
+                          {userSubscription.membership.sourceNote && (
+                            <Alert
+                              className="mt-3"
+                              type="warning"
+                              showIcon
+                              message={userSubscription.membership.sourceNote}
+                            />
+                          )}
+                        </Card>
+                      ) : (
+                        <Alert type="info" showIcon message="Người dùng chưa có gói hội viên đang hiệu lực." />
+                      )}
+
+                      <Card title="Giao dịch gần đây">
+                        <Table
+                          rowKey="id"
+                          dataSource={userSubscription?.recentTransactions || userTransactions}
+                          pagination={{ pageSize: 5 }}
+                          columns={[
+                            {
+                              title: 'Loại',
+                              dataIndex: 'type',
+                              render: type => <Tag>{type}</Tag>
+                            },
+                            {
+                              title: 'Số tiền',
+                              dataIndex: 'amount',
+                              render: amount => formatMoney(amount)
+                            },
+                            {
+                              title: 'Trạng thái',
+                              dataIndex: 'status',
+                              render: status => <Tag color={status === 'SUCCESS' ? 'green' : 'red'}>{status}</Tag>
+                            },
+                            {
+                              title: 'Mô tả',
+                              dataIndex: 'description'
+                            },
+                            {
+                              title: 'Thời gian',
+                              dataIndex: 'createdAt',
+                              render: value => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '--'
+                            }
+                          ]}
+                        />
+                      </Card>
+                    </div>
+                  )
+                },
+                {
+                  key: 'kyc',
+                  label: 'KYC',
+                  children: (
+                    <Descriptions bordered size="small" column={1}>
+                      <Descriptions.Item label="Họ tên">
+                        {selectedUser.fullName || '--'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Email">
+                        {selectedUser.email || '--'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Số CCCD">
+                        {selectedUser.citizenId || 'Chưa có dữ liệu'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Trạng thái KYC">
+                        <Tag color={selectedUser.kycStatus === 'VERIFIED' ? 'green' : selectedUser.kycStatus === 'PENDING' ? 'orange' : 'default'}>
+                          {selectedUser.kycStatus || 'UNVERIFIED'}
+                        </Tag>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  )
+                }
+              ]}
+            />
+          )}
+        </Drawer>
+
         <Modal
           title="Duyệt Hồ Sơ Định Danh"
           open={isKycModalOpen}

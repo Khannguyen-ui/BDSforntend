@@ -1,12 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { App } from 'antd';
-import useAuth from '../hooks/useAuth'; // ✅ USER CONTEXT
+import useAuth from '../hooks/useAuth'; 
 import { Spin } from 'antd';
 
 const UserProtectedRoute = ({ allowedRoles }) => {
-  const { user, loading } = useAuth(); // ✅ USER AUTH
+  const { user, loading } = useAuth();
   const location = useLocation();
-  const messageApi = App.useApp();
+
 
   if (loading) {
     return (
