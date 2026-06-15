@@ -23,21 +23,23 @@ const paymentService = {
 
   // 4. Mua gói hội viên
   buyMembership: (packageId) => {
-    // Đưa packageId vào thành một Object JSON (Body)
-    return axiosClient.post('/api/packages/buy-membership', {
-      packageId: packageId
+    // Bắt buộc dùng tham số thứ 2 là null (Body rỗng) 
+    // và nhét packageId vào tham số thứ 3 (Config Params)
+    return axiosClient.post('/api/packages/buy-membership', null, {
+      params: {
+        packageId: packageId
+      }
     });
   },
 
-  // 5. Mua gói đẩy tin
   buyPromotion: (packageId, propertyId) => {
     return axiosClient.post('/api/packages/buy-promotion', null, {
       params: {
         packageId: packageId,
-        roomId: propertyId  // CHỈ CẦN SỬA ĐÚNG CHỖ NÀY: Đổi propertyId thành roomId
+        propertyId: propertyId
       }
     });
-  },
+  }
 };
 
 export default paymentService;
