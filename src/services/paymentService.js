@@ -31,10 +31,11 @@ const paymentService = {
 
   // 5. Mua gói đẩy tin
   buyPromotion: (packageId, propertyId) => {
-    // Đưa dữ liệu vào Object JSON (Body), xóa chữ null và params đi
-    return axiosClient.post('/api/packages/buy-promotion', {
-      packageId: packageId,
-      propertyId: propertyId
+    return axiosClient.post('/api/packages/buy-promotion', null, {
+      params: {
+        packageId: packageId,
+        roomId: propertyId  // CHỈ CẦN SỬA ĐÚNG CHỖ NÀY: Đổi propertyId thành roomId
+      }
     });
   },
 };
