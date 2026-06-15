@@ -12,7 +12,8 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import roomService from '../../services/roomService';
-import useAuth from '../../hooks/useAuth'; // Thêm Hook lấy user
+import useAuth from '../../hooks/useAuth';
+import paymentService from '../../services/paymentService';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -334,7 +335,7 @@ const MyRooms = () => {
       onOk: async () => {
         try {
           setPushLoading(true);
-          await roomService.pushRoom(selectedRoomToPush.id, selectedPackageId);
+          await paymentService.buyPromotion(selectedPackageId, selectedRoomToPush.id);
           message.success("Đẩy tin thành công! Tin đã lên Top.");
           setIsPushModalOpen(false);
           fetchMyRooms();

@@ -274,21 +274,9 @@ const roomService = {
     return axiosClient.post(`/properties/${roomId}/upgrade`, { servicePackageId: packageId });
   },
   purchasePackage: (packageId) => axiosClient.post('/transactions/purchase-package', packageId),
-  pushRoom: async (propertyId, packageId) => {
-    // Đổi chữ 'axios' thành 'axiosClient' (hoặc 'api' tùy dự án của bạn)
-    return await axiosClient.post('/api/packages/buy-promotion', null, {
-      params: {
-        propertyId: propertyId,
-        packageId: packageId
-      }
-    });
-  },
 
-  buyMembership: (packageId) => {
-    return axiosClient.post('/api/packages/buy-membership', null, {
-      params: { packageId }
-    });
-  },
+
+ 
 
   updateRoomStatus: (roomId, status) => {
     return axiosClient.put(`/properties/${roomId}/status`, null, { params: { status } });
