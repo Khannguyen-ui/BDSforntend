@@ -22,18 +22,19 @@ const paymentService = {
   },
 
   // 4. Mua gói hội viên
-  // Backend: POST /api/packages/buy-membership?packageId=yyy
   buyMembership: (packageId) => {
-    return axiosClient.post('/api/packages/buy-membership', null, {
-      params: { packageId }
+    // Đưa packageId vào thành một Object JSON (Body)
+    return axiosClient.post('/api/packages/buy-membership', {
+      packageId: packageId
     });
   },
 
   // 5. Mua gói đẩy tin
-  // Backend: POST /api/packages/buy-promotion?packageId=xxx&propertyId=yyy
   buyPromotion: (packageId, propertyId) => {
-    return axiosClient.post('/api/packages/buy-promotion', null, {
-      params: { packageId, propertyId }
+    // Đưa dữ liệu vào Object JSON (Body), xóa chữ null và params đi
+    return axiosClient.post('/api/packages/buy-promotion', {
+      packageId: packageId,
+      propertyId: propertyId
     });
   },
 };
