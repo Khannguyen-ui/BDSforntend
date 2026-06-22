@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* --- LEAFLET CLUSTER CUSTOM STYLES --- */
+
+/* Hình tròn bao quanh số lượng */
+.custom-marker-cluster {
+  background-color: rgba(24, 144, 255, 0.6); /* Màu xanh Antd mờ */
+  border-radius: 50%;
+  display: flex !important; /* Đè lên display mặc định của leaflet */
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Số lượng bên trong */
+.cluster-icon {
+  width: 24px;
+  height: 24px;
+  background-color: #1677ff; /* Màu xanh đậm Antd */
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+/* Hiệu ứng khi rê chuột vào cluster */
+.custom-marker-cluster:hover {
+  background-color: rgba(24, 144, 255, 0.8);
+  transform: scale(1.1);
+  z-index: 1000 !important;
+}
+
+/* --- CUSTOM TIME PICKER DROPDOWN --- */
+.custom-time-picker-dropdown .ant-picker-panel-container {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(249, 99, 2, 0.15), 0 8px 10px -6px rgba(249, 99, 2, 0.1);
+  overflow: hidden;
+  border: 1px solid #ffedd5; /* orange-100 */
+}
+
+/* Các cột giờ/phút */
+.custom-time-picker-dropdown .ant-picker-time-panel-column {
+  scrollbar-width: thin;
+}
+.custom-time-picker-dropdown .ant-picker-time-panel-column::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-time-picker-dropdown .ant-picker-time-panel-column::-webkit-scrollbar-thumb {
+  background-color: #fdba74; /* orange-300 */
+  border-radius: 4px;
+}
+
+/* Item được chọn */
+.custom-time-picker-dropdown .ant-picker-time-panel-column > li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+  background-color: #fff7ed; /* orange-50 */
+  color: #f96302;
+  font-weight: bold;
+  border-radius: 6px;
+}
+
+/* Item hover */
+.custom-time-picker-dropdown .ant-picker-time-panel-column > li:hover .ant-picker-time-panel-cell-inner {
+  background-color: #ffedd5;
+  border-radius: 6px;
+  color: #f96302;
+}
+
+/* Footer (chứa nút OK) */
+.custom-time-picker-dropdown .ant-picker-footer {
+  border-top: 1px solid #ffedd5;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.custom-time-picker-dropdown .ant-picker-ok > button {
+  background-color: #f96302;
+  border-color: #f96302;
+  border-radius: 6px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(249, 99, 2, 0.2);
+}
+.custom-time-picker-dropdown .ant-picker-ok > button:hover {
+  background-color: #d85502 !important;
+  border-color: #d85502 !important;
+}
+
+/* Nút Now nếu có hiện */
+.custom-time-picker-dropdown .ant-picker-now-btn {
+  color: #f96302;
+  font-weight: 500;
+}
+.custom-time-picker-dropdown .ant-picker-now-btn:hover {
+  color: #d85502;
+}

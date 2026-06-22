@@ -1,0 +1,584 @@
+import React, { useEffect, useState } from 'react';
+import {
+  Table, Button, Tag, Space, Tabs, Popconfirm, message, Modal,
+  Form, Input, InputNumber, Select, Tooltip, Upload, Image, Dropdown
+} from 'antd';
+import {
+  DeleteOutlined, UndoOutlined, StopOutlined,
+  PlusOutlined, EditOutlined, EyeOutlined, HomeOutlined,
+  UploadOutlined, EnvironmentOutlined, MoreOutlined
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import adminService from '../../services/adminService';
+import LocationPicker from '../../components/shared/LocationPicker';
+import roomService from '../../services/roomService';
+
+import dayjs from 'dayjs';
+
+const { TabPane } = Tabs;
+const { Option } = Select;
+const { TextArea } = Input;
+
+const ProjectManagement = () => {
+  const [activeProjects, setActiveProjects] = useState([]);
+  const [trashProjects, setTrashProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('1');
+  const [amenitiesList, setAmenitiesList] = useState([]);
+  const navigate = useNavigate();
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form] = Form.useForm();
+  const [imageUploading, setImageUploading] = useState(false);
+
+  const handleProjectLocationChange = (lat, lng, addressData) => {
+    form.setFieldsValue({
+      latitude: lat,
+      longitude: lng
+    });
+
+    if (addressData?.fullAddress) {
+      form.setFieldsValue({
+        address: addressData.fullAddress
+      });
+    }
+  };
+  const handleSave = async (values) => {
+    try {
+      const payload = {
+        name: values.name?.trim(),
+        description: values.description?.trim() || '',
+        imageUrl: values.imageUrl || null,
+        address: values.address?.trim(),
+        projectType: values.projectType,
+        amenities: Array.isArray(values.amenities) ? values.amenities : [],
+        latitude: values.latitude !== undefined && values.latitude !== null
+          ? Number(values.latitude)
+          : null,
+        longitude: values.longitude !== undefined && values.longitude !== null
+          ? Number(values.longitude)
+          : null,
+      };
+
+      if (!payload.name) {
+        message.error('Vui lòng nhập tên dự án');
+        return;
+      }
+
+      if (!payload.address) {
+        message.error('Vui lòng nhập hoặc chọn địa chỉ dự án');
+        return;
+      }
+
+      if (!payload.latitude || !payload.longitude) {
+        message.error('Vui lòng chọn vị trí dự án trên bản đồ');
+        return;
+      }
+
+      if (editingId) {
+        await adminService.updateProject(editingId, payload);
+        message.success('Cập nhật dự án thành công!');
+      } else {
+        await adminService.createProject(payload);
+        message.success('Tạo dự án thành công!');
+      }
+
+      setIsModalOpen(false);
+      fetchActiveProjects();
+    } catch (error) {
+      console.error('Lỗi lưu dự án:', error.response?.data || error);
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+
+      message.error('Lỗi lưu dự án: ' + errorMsg);
+    }
+  };
+  const normalizePageData = (res) => {
+    const raw =
+      res?.data?.result?.content ||
+      res?.data?.content ||
+      res?.data?.data?.content ||
+      res?.data?.result ||
+      res?.data?.data ||
+      [];
+
+    return Array.isArray(raw) ? raw : [];
+  };
+
+  const fetchActiveProjects = async () => {
+    setLoading(true);
+    try {
+      const res = await adminService.getAllProjects(0, 100);
+      setActiveProjects(normalizePageData(res));
+    } catch (error) {
+      console.error(error);
+      message.error('Lỗi tải danh sách dự án');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchAmenities = async () => {
+    try {
+      const res = await roomService.getAllAmenities();
+
+      const raw =
+        res.data?.result ||
+        res.data?.content ||
+        res.data?.data ||
+        res.data ||
+        [];
+
+      setAmenitiesList(Array.isArray(raw) ? raw : []);
+    } catch (error) {
+      console.error('Lỗi tải tiện ích:', error);
+      setAmenitiesList([]);
+    }
+  };
+
+  const fetchTrashProjects = async () => {
+    setLoading(true);
+    try {
+      const res = await adminService.getTrashProjects(0, 100);
+      setTrashProjects(normalizePageData(res));
+    } catch (error) {
+      console.error(error);
+      message.error('Lỗi tải dữ liệu thùng rác dự án');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === '1') {
+      fetchActiveProjects();
+    } else {
+      fetchTrashProjects();
+    }
+  }, [activeTab]);
+  useEffect(() => {
+    fetchAmenities();
+  }, []);
+
+  // --- ACTIONS ---
+  const handleSoftDelete = async (id) => {
+    try {
+      await adminService.softDeleteProject(id);
+      message.success('Đã đưa dự án vào thùng rác!');
+      fetchActiveProjects();
+    } catch (error) {
+      message.error('Không thể xóa dự án: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await adminService.restoreProject(id);
+      message.success('Khôi phục dự án thành công!');
+      fetchTrashProjects();
+    } catch (error) {
+      message.error('Lỗi khôi phục: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleHardDelete = async (id) => {
+    try {
+      await adminService.hardDeleteProject(id);
+      message.success('Đã xóa vĩnh viễn dự án!');
+      fetchTrashProjects();
+    } catch (error) {
+      message.error('Lỗi xóa vĩnh viễn: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    form.resetFields();
+
+    form.setFieldsValue({
+      projectType: 'BOARDING_HOUSE',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      amenities: [],
+      imageUrl: null
+    });
+
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (record) => {
+    setEditingId(record.id);
+    form.setFieldsValue({
+      name: record.name,
+      description: record.description,
+      imageUrl: record.imageUrl,
+      address: record.address,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      projectType: record.projectType,
+      amenities: Array.isArray(record.amenities)
+        ? record.amenities
+        : record.amenities
+          ? String(record.amenities).split(',').map(x => x.trim()).filter(Boolean)
+          : [],
+    });
+    setIsModalOpen(true);
+  };
+  const handleUploadProjectImage = async ({ file, onSuccess, onError }) => {
+    setImageUploading(true);
+
+    try {
+      const res = await roomService.uploadImage(file);
+
+      const imageUrl =
+        res.data?.result?.url ||
+        res.data?.result?.secureUrl ||
+        res.data?.result ||
+        res.data?.url ||
+        res.data?.secureUrl ||
+        res.data;
+
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        throw new Error('Không nhận được URL ảnh từ media-service');
+      }
+
+      form.setFieldsValue({ imageUrl });
+      message.success('Upload ảnh dự án thành công!');
+      onSuccess?.(res.data);
+    } catch (error) {
+      console.error('Lỗi upload ảnh dự án:', error);
+      message.error('Upload ảnh dự án thất bại');
+      onError?.(error);
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+
+
+  // --- CỘT CHO TAB "ĐANG HOẠT ĐỘNG" ---
+  const activeColumns = [
+    {
+      title: 'Ảnh',
+      dataIndex: 'imageUrl',
+      width: 90,
+      render: (url) => url ? (
+        <Image
+          src={url}
+          width={64}
+          height={44}
+          className="object-cover rounded"
+        />
+      ) : (
+        <div className="w-16 h-11 rounded bg-orange-50 flex items-center justify-center text-[#f96302]">
+          <HomeOutlined />
+        </div>
+      )
+    },
+    { title: 'Tên dự án', dataIndex: 'name', width: 250, render: (t) => <span className="font-bold">{t}</span> },
+    { title: 'Địa chỉ', dataIndex: 'address', ellipsis: true },
+    {
+      title: 'Loại hình',
+      dataIndex: 'projectType',
+      render: (type) => <Tag color="blue">{type}</Tag>
+    },
+    { title: 'Trạng thái', dataIndex: 'status', render: (status) => <Tag color="green">{status || 'ACTIVE'}</Tag> },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      width: 170,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space size={6} wrap={false}>
+          <Button
+            icon={<HomeOutlined />}
+            size="small"
+            onClick={() => navigate(`/admin/rooms?projectId=${record.id}`)}
+          >
+            Tin
+          </Button>
+
+          <Button
+            icon={<EditOutlined />}
+            size="small"
+            type="primary"
+            ghost
+            onClick={() => openEditModal(record)}
+          >
+            Sửa
+          </Button>
+
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'public',
+                  icon: <EyeOutlined />,
+                  label: 'Xem public',
+                  onClick: () => navigate(`/projects/${record.id}`)
+                },
+                {
+                  key: 'delete',
+                  danger: true,
+                  icon: <StopOutlined />,
+                  label: (
+                    <Popconfirm
+                      title="Xóa dự án này?"
+                      description="Dự án sẽ được đưa vào Thùng rác."
+                      onConfirm={() => handleSoftDelete(record.id)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <span>Xóa mềm</span>
+                    </Popconfirm>
+                  )
+                }
+              ]
+            }}
+          >
+            <Button size="small" icon={<MoreOutlined />} />
+          </Dropdown>
+        </Space>
+      )
+    }
+  ];
+
+  // --- CỘT CHO TAB "THÙNG RÁC" ---
+  const trashColumns = [
+    {
+      title: 'Ảnh',
+      dataIndex: 'imageUrl',
+      width: 90,
+      render: (url) => url ? (
+        <Image
+          src={url}
+          width={64}
+          height={44}
+          className="object-cover rounded"
+        />
+      ) : (
+        <div className="w-16 h-11 rounded bg-orange-50 flex items-center justify-center text-[#f96302]">
+          <HomeOutlined />
+        </div>
+      )
+    },
+    { title: 'Tên dự án (Đã xóa)', dataIndex: 'name', width: 250, render: (t) => <span className="text-gray-400 line-through">{t}</span> },
+    { title: 'Địa chỉ', dataIndex: 'address', ellipsis: true },
+    { title: 'Ngày tạo', dataIndex: 'createdAt', render: (val) => val ? dayjs(val).format('DD/MM/YYYY') : '' },
+    {
+      title: 'Hành động',
+      render: (_, record) => (
+        <Space>
+          <Popconfirm
+            title="Khôi phục dự án này?"
+            onConfirm={() => handleRestore(record.id)}
+            okText="Khôi phục"
+            cancelText="Hủy"
+          >
+            <Button type="primary" className="bg-green-600" icon={<UndoOutlined />} size="small">Khôi phục</Button>
+          </Popconfirm>
+
+          <Popconfirm
+            title="Xóa VĨNH VIỄN?"
+            description="Thao tác này không thể hoàn tác!"
+            onConfirm={() => handleHardDelete(record.id)}
+            okText="Xóa luôn"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />} size="small">Xóa vĩnh viễn</Button>
+          </Popconfirm>
+        </Space>
+      )
+    }
+  ];
+
+  return (
+    <div className="p-4 bg-white rounded shadow min-h-screen">
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Quản Lý Dự Án</h2>
+          <p className="text-gray-500">Tạo, sửa, xóa và quản lý thùng rác cho Dự án/Khu trọ.</p>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal} className="bg-[#f96302] hover:bg-[#e05a02] border-none h-10 font-bold">
+          Thêm Dự Án Mới
+        </Button>
+      </div>
+
+      <Tabs defaultActiveKey="1" onChange={(key) => setActiveTab(key)} type="card">
+        <TabPane tab={<span className="font-medium">Dự Án Đang Hoạt Động</span>} key="1">
+          <Table
+            dataSource={activeProjects}
+            columns={activeColumns}
+            rowKey="id"
+            loading={loading && activeTab === '1'}
+            scroll={{ x: 1000 }}
+          />
+        </TabPane>
+        <TabPane tab={<span className="font-medium text-red-500"><DeleteOutlined /> Thùng Rác</span>} key="2">
+          <Table
+            dataSource={trashProjects}
+            columns={trashColumns}
+            rowKey="id"
+            loading={loading && activeTab === '2'}
+            scroll={{ x: 900 }}
+          />
+        </TabPane>
+      </Tabs>
+
+      {/* --- MODAL THÊM / SỬA --- */}
+      <Modal
+        title={<span className="text-xl font-bold">{editingId ? 'Sửa Dự Án' : 'Thêm Dự Án Mới'}</span>}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={() => form.submit()}
+        width={900}
+        okText="Lưu lại"
+        cancelText="Hủy"
+        okButtonProps={{ className: "bg-[#f96302] hover:bg-[#e05a02] border-none" }}
+      >
+        <Form form={form} layout="vertical" onFinish={handleSave} className="mt-4">
+          <Form.Item name="name" label="Tên dự án" rules={[{ required: true, message: 'Vui lòng nhập tên dự án!' }]}>
+            <Input placeholder="Nhập tên dự án..." size="large" />
+          </Form.Item>
+
+          <div className="flex gap-4">
+            <Form.Item name="projectType" label="Loại hình" className="flex-1" rules={[{ required: true }]}>
+              <Select size="large">
+                <Option value="BOARDING_HOUSE">Khu trọ / Dãy trọ</Option>
+                <Option value="APARTMENT_COMPLEX">Khu căn hộ / Chung cư</Option>
+                <Option value="VILLA_COMPOUND">Khu biệt thự</Option>
+                <Option value="COMMERCIAL_CENTER">Trung tâm thương mại / Mặt bằng</Option>
+              </Select>
+            </Form.Item>
+          </div>
+
+
+          <Form.Item
+            name="address"
+            label="Địa chỉ dự án / khu trọ"
+            rules={[{ required: true, message: 'Vui lòng chọn hoặc nhập địa chỉ!' }]}
+          >
+            <Input
+              prefix={<EnvironmentOutlined className="text-red-500" />}
+              placeholder="Địa chỉ sẽ tự điền khi chọn vị trí trên bản đồ"
+              size="large"
+            />
+          </Form.Item>
+
+          <div className="mb-4">
+            <div className="font-semibold text-gray-700 mb-2">
+              Chọn vị trí dự án trên bản đồ
+            </div>
+
+            {isModalOpen && (
+              <LocationPicker
+                key={`${editingId || 'new'}-${form.getFieldValue('latitude') || 10.7769}-${form.getFieldValue('longitude') || 106.7009}`}
+                onCoordinatesChange={handleProjectLocationChange}
+                initialLat={form.getFieldValue('latitude') || 10.7769}
+                initialLng={form.getFieldValue('longitude') || 106.7009}
+              />
+            )}
+          </div>
+
+          <Form.Item
+            name="latitude"
+            hidden
+            rules={[{ required: true, message: 'Vui lòng chọn vị trí trên bản đồ!' }]}
+          >
+            <InputNumber />
+          </Form.Item>
+
+          <Form.Item
+            name="longitude"
+            hidden
+            rules={[{ required: true, message: 'Vui lòng chọn vị trí trên bản đồ!' }]}
+          >
+            <InputNumber />
+          </Form.Item>
+          <Form.Item
+            name="amenities"
+            label="Tiện ích dự án / khu trọ"
+            tooltip="Danh sách này lấy từ mục Tiện ích trong quản trị master data."
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              size="large"
+              placeholder="Chọn tiện ích đang có..."
+              optionFilterProp="children"
+            >
+              {amenitiesList.map((item) => (
+                <Option key={item.id} value={item.name}>
+                  {item.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="imageUrl" hidden>
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Ảnh đại diện dự án">
+            <Form.Item shouldUpdate noStyle>
+              {({ getFieldValue }) => {
+                const imageUrl = getFieldValue('imageUrl');
+
+                return (
+                  <div className="space-y-3">
+                    {imageUrl && (
+                      <Image
+                        src={imageUrl}
+                        width={220}
+                        height={130}
+                        className="object-cover rounded-lg border"
+                      />
+                    )}
+
+                    <Upload
+                      customRequest={handleUploadProjectImage}
+                      showUploadList={false}
+                      accept="image/*"
+                      maxCount={1}
+                    >
+                      <Button
+                        icon={<UploadOutlined />}
+                        loading={imageUploading}
+                      >
+                        {imageUrl ? 'Đổi ảnh dự án' : 'Tải ảnh dự án'}
+                      </Button>
+                    </Upload>
+
+                    {imageUrl && (
+                      <Button
+                        danger
+                        type="link"
+                        onClick={() => form.setFieldsValue({ imageUrl: null })}
+                      >
+                        Xóa ảnh
+                      </Button>
+                    )}
+                  </div>
+                );
+              }}
+            </Form.Item>
+          </Form.Item>
+          <Form.Item name="description" label="Mô tả">
+            <TextArea rows={4} placeholder="Nhập mô tả chi tiết về dự án..." />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default ProjectManagement;
