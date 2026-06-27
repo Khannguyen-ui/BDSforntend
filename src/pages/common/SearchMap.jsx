@@ -5,7 +5,8 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Card, List, Tag, Typography, Spin, Image, Button, message, Empty, Avatar } from 'antd';
 import {
   EnvironmentOutlined, ArrowLeftOutlined, AimOutlined,
-  FullscreenOutlined, FullscreenExitOutlined, DoubleLeftOutlined, DoubleRightOutlined
+  FullscreenOutlined, FullscreenExitOutlined, DoubleLeftOutlined, DoubleRightOutlined,
+  CrownFilled
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
@@ -221,19 +222,22 @@ const SearchMap = () => {
               .map(room => {
                 const markerLat = room.latitude || room.lat || room.location?.lat;
                 const markerLng = room.longitude || room.lng || room.location?.lon;
+                const isVip = room.priorityLevel > 0 || room.isPromoted || room.promotionPackageId || room.promotionPackageName;
                 //console.log(`[Bản đồ] Vẽ ghim phòng ID: ${room.id} - ${room.title} tại tọa độ (Lat: ${markerLat}, Lng: ${markerLng})`);
                 return (
                   <Marker key={room.id} position={[markerLat, markerLng]} icon={createCustomIcon(room)}>
                     <Popup className="custom-popup">
-                      <div className="w-52 p-0 overflow-hidden" onClick={() => navigate(`/rooms/${room.id}`)}>
-                        <div className="relative">
-                          <img src={getImageUrl(room)} className="w-full h-28 object-cover rounded-t-lg" />
-                          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded backdrop-blur-sm">
+                      <div className="w-52 p-0 overflow-hidden cursor-pointer group" onClick={() => navigate(`/rooms/${room.id}`)}>
+                        <div className="relative overflow-hidden rounded-t-lg">
+                          <img src={getImageUrl(room)} className="w-full h-28 object-cover transition-transform duration-300 group-hover:scale-110" />
+                          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded backdrop-blur-sm z-10">
                             <EnvironmentOutlined /> {room.district || 'Khu vực'}
                           </div>
                         </div>
                         <div className="p-3 bg-white rounded-b-lg">
-                          <div className="font-bold text-gray-800 line-clamp-2 text-sm leading-tight hover:text-[#f96302] transition-colors mb-1">{room.title}</div>
+                          <div className={`font-bold line-clamp-2 text-sm leading-tight transition-colors mb-1 ${isVip ? 'text-[#f96302]' : 'text-gray-800 group-hover:text-[#f96302]'}`}>
+                            {isVip && <CrownFilled className="text-[#fadb14] mr-1" />} {room.title}
+                          </div>
                           <div className="text-[#f96302] font-bold text-base">{room.price?.toLocaleString()} đ<span className="text-gray-400 text-xs font-normal">/tháng</span></div>
                         </div>
                       </div>

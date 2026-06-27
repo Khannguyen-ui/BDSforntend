@@ -299,7 +299,7 @@ const PublicLayout = () => {
         <Outlet />
       </main>
 
-      <footer className="relative mt-auto overflow-hidden bg-[#111827] text-white">
+      <footer className="relative mt-auto overflow-hidden bg-[#111827] text-white text-left">
         <div className="absolute inset-0 bg-gradient-to-r from-[#f96302]/10 via-transparent to-blue-500/10"></div>
         <div className="absolute -top-20 -right-20 h-52 w-52 rounded-full bg-[#f96302]/10 blur-3xl"></div>
         <div className="absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl"></div>

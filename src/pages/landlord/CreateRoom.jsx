@@ -112,12 +112,47 @@ const CreateRoom = () => {
   const handleLocationChange = (lat, lng, addressData) => {
     form.setFieldsValue({ latitude: lat, longitude: lng });
     if (addressData) {
-      // Chỉ điền địa chỉ, KHÔNG tự động điền Tỉnh/Phường từ Nominatim
-      // Người dùng bắt buộc phải chọn Tỉnh/Phường từ danh sách 34 tỉnh
       form.setFieldsValue({
         address: addressData.fullAddress,
         street: addressData.street
       });
+
+      // Tự động suy luận Tỉnh/Thành phố từ dữ liệu trả về
+      let detectedProvince = provinces.find(p => 
+        p.name === addressData.province || 
+        p.name_with_type === addressData.province ||
+        (addressData.fullAddress && addressData.fullAddress.includes(p.name))
+      );
+
+      if (detectedProvince) {
+        setSelectedProvinceCode(detectedProvince.code);
+        form.setFieldsValue({ province: detectedProvince.name_with_type || detectedProvince.name });
+        
+        const filteredWards = Object.values(wardData || {}).filter(
+          w => w.parent_code === String(detectedProvince.code)
+        );
+        setWards(filteredWards);
+
+        // Tự động suy luận Phường/Xã sau khi có Tỉnh
+        let detectedWard = filteredWards.find(w => 
+          w.name === addressData.ward || 
+          w.name_with_type === addressData.ward ||
+          (addressData.fullAddress && addressData.fullAddress.includes(w.name))
+        );
+
+        if (detectedWard) {
+          setSelectedWardCode(detectedWard.code);
+          form.setFieldsValue({ ward: detectedWard.name_with_type || detectedWard.name });
+        } else {
+          setSelectedWardCode(undefined);
+          form.setFieldsValue({ ward: undefined });
+        }
+      } else {
+        setSelectedProvinceCode(undefined);
+        setSelectedWardCode(undefined);
+        setWards([]);
+        form.setFieldsValue({ province: undefined, ward: undefined });
+      }
     }
   };
 

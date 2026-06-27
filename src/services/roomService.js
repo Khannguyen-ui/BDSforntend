@@ -191,8 +191,45 @@ const roomService = {
       const resultData = res.data?.result || res.data?.data || res.data;
 
       // Dữ liệu trả về (có thể rỗng nếu không có bài viết nào khớp với bộ lọc)
-      const content = Array.isArray(resultData) ? resultData : (resultData?.content || []);
+      let content = Array.isArray(resultData) ? resultData : (resultData?.content || []);
       // Không ném lỗi nếu content rỗng, vì đây là kết quả lọc hợp lệ
+
+      // Lấy thêm thông tin VIP từ DB chính để bù đắp cho ElasticSearch nếu thiếu
+      try {
+        const publicRes = await axiosClient.get('/public/properties', { params: { size: 500, status: 'ACTIVE' } });
+        const publicData = publicRes.data?.result?.content || publicRes.data?.data?.content || publicRes.data?.content || (Array.isArray(publicRes.data?.result) ? publicRes.data.result : []);
+        
+        if (Array.isArray(publicData)) {
+          const vipMap = {};
+          publicData.forEach(p => {
+            if (p.isPromoted || p.priorityLevel > 0 || p.promotionPackageId) {
+               vipMap[p.id] = {
+                 priorityLevel: p.priorityLevel,
+                 isPromoted: p.isPromoted,
+                 promotionPackageId: p.promotionPackageId,
+                 promotionPackageName: p.promotionPackageName,
+                 lastPushedAt: p.lastPushedAt,
+                 promotionExpiresAt: p.promotionExpiresAt
+               };
+            }
+          });
+
+          content = content.map(item => {
+            if (vipMap[item.id]) {
+               return { ...item, ...vipMap[item.id] };
+            }
+            return item;
+          });
+
+          if (!Array.isArray(resultData)) {
+             resultData.content = content;
+          } else {
+             resultData = content;
+          }
+        }
+      } catch(mergeErr) {
+        console.warn("Could not merge VIP data:", mergeErr.message);
+      }
 
       return { data: resultData };
     } catch (error) {
