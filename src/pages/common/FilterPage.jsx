@@ -785,23 +785,23 @@ const FilterPage = () => {
           {/* 2. ĐÃ THÊM THANH TÌM KIẾM VÀ NÚT BẢN ĐỒ Ở ĐÂY */}
           {/* ================================================================= */}
           <div className="max-w-7xl mx-auto px-4 mb-4">
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
               <div className="flex-grow flex items-stretch shadow-sm rounded-lg overflow-hidden border border-gray-300 focus-within:border-[#f96302] focus-within:ring-1 focus-within:ring-orange-100 transition-all bg-white">
                 <Input
                   placeholder="Tìm kiếm theo tên phòng, địa chỉ..."
                   variant="borderless"
-                  className="flex-grow h-[46px] text-base"
+                  className="flex-grow h-[46px] text-sm sm:text-base min-w-[50px] px-1 sm:px-2"
                   value={filters.keyword}
                   onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
                   onPressEnter={() => {
                     setCurrentPage(1);
                     fetchRooms(1);
                   }}
-                  prefix={<SearchOutlined className="text-gray-400 mr-2" />}
+                  prefix={<SearchOutlined className="text-gray-400 mr-1 sm:mr-2" />}
                 />
                 <Button
                   type="primary"
-                  className="h-full border-none rounded-none bg-[#f96302] hover:bg-[#e05a02] font-bold px-8 text-base transition-colors"
+                  className="h-full border-none rounded-none bg-[#f96302] hover:bg-[#e05a02] font-bold px-2 sm:px-8 text-xs sm:text-base transition-colors flex-shrink-0"
                   onClick={() => {
                     setCurrentPage(1);
                     fetchRooms(1);
@@ -845,7 +845,7 @@ const FilterPage = () => {
 
                   navigate(`/search?${params.toString()}`);
                 }}
-                className="flex items-center h-[48px] border-[#f96302] text-[#f96302] hover:bg-orange-50 font-medium px-6 rounded-lg"
+                className="flex items-center flex-shrink-0 h-[46px] border-[#f96302] text-[#f96302] hover:bg-orange-50 font-medium px-2 sm:px-6 rounded-lg text-xs sm:text-base"
               >
                 Bản đồ
               </Button>
