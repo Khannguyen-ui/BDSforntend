@@ -1,0 +1,303 @@
+[
+  {
+    "id": 36,
+    "title": "Chung cư Tầng 1 Phường Đồng Phú",
+    "price": 15000000,
+    "address": "Thái Dũng, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1780497533/homeverse/properties/sz1qcaz47kca9gyuzb03.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1780497583/homeverse/general/rsgaiqg2eiqcmdusbvnz.jpg"
+    ],
+    "createdAt": "2026-06-03T14:39:47.71009",
+    "isPromoted": true,
+    "itemType": "property",
+    "score": 5.199999999999999,
+    "district": "Không xác định",
+    "ownerId": 5,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "PROMOTED",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 1,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 37,
+    "title": "gdfgdfgdfgdfg",
+    "price": 40000000000,
+    "address": "Thái Dũng, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1781613661/homeverse/properties/rido1czehhppvyu9wto6.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1781613670/homeverse/general/yrwahvflysksrhagd68g.jpg"
+    ],
+    "createdAt": "2026-06-16T12:41:14.189515",
+    "isPromoted": true,
+    "itemType": "property",
+    "score": 7,
+    "district": "Không xác định",
+    "ownerId": 4,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "PROMOTED"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 0,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 38,
+    "title": "gdfgdfgdfgdfgfdgdfgdf",
+    "price": 5000000,
+    "address": "Đường Số 79, Khu phố 3, Phường Phước Long, Thành phố Thủ Đức, Thành phố Hồ Chí Minh, 71211, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1782117581/homeverse/properties/umrcaxrdritqkdaigf2w.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1782117584/homeverse/general/elq1cf0ncj2vtuvchhzk.jpg",
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1782117589/homeverse/general/xoqmbnp6x9jgtomb1scr.jpg"
+    ],
+    "createdAt": "2026-06-22T08:40:01.301573",
+    "isPromoted": true,
+    "itemType": "property",
+    "score": 11,
+    "district": "Không xác định",
+    "ownerId": 4,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "PROMOTED"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 0,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 35,
+    "title": "Nhà Nguyên Căn Tp.Đồng Nai",
+    "price": 5000000,
+    "address": "Tân Tiến, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1779889502/homeverse/properties/fvc9mvb1owoopii7sln9.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779889514/homeverse/general/seqjmpsu1kk9mpjouotc.jpg"
+    ],
+    "createdAt": "2026-05-27T13:45:18.135543",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 3.1,
+    "district": "Không xác định",
+    "ownerId": 5,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 2,
+    "saveCount": 1,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 34,
+    "title": "Nhà Nguyên Căn Phường Đồng Phú",
+    "price": 5000000,
+    "address": "Tân Liên, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1779889146/homeverse/properties/simdhge0dgtjcciuoxol.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779889150/homeverse/general/pjhzkx4ssxjslkvmqbip.jpg"
+    ],
+    "createdAt": "2026-05-27T13:39:20.382512",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 4.1,
+    "district": "Không xác định",
+    "ownerId": 5,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 2,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 1,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 29,
+    "title": "Nhà Trọ Thủ Đức 2",
+    "price": 2000000,
+    "address": "Trần Thị Điệu, Khu phố 9, Phường Phước Long, Thành phố Thủ Đức, Thành phố Hồ Chí Minh, 71211, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1778767190/homeverse/properties/t00qcm4a7cl7bkn1rwap.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1778767216/homeverse/general/ojc66nrz3fryr2x7mtbo.jpg"
+    ],
+    "createdAt": "2026-05-14T14:00:24.469919",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 3.6,
+    "district": "Không xác định",
+    "ownerId": 4,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 3,
+    "saveCount": 2,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 3,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 33,
+    "title": "Phòng trọ Đồng Phú",
+    "price": 4000000,
+    "address": "Tân Liên, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1779888769/homeverse/properties/rsxg8ta56y7tmbrs5yfn.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779888777/homeverse/general/c2m05dytx7ddkkmic4tv.jpg"
+    ],
+    "createdAt": "2026-05-27T13:33:07.487081",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 4.6,
+    "district": "Không xác định",
+    "ownerId": 5,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 2,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 2,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 32,
+    "title": "gggg",
+    "price": 3,
+    "address": "Tân Liên, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1779887245/homeverse/properties/tkkgwsapfedxgwatrtha.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779887249/homeverse/general/ecmn8qzjbdcfqaif2lw0.jpg"
+    ],
+    "createdAt": "2026-05-27T13:07:37.977749",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 4.1,
+    "district": "Không xác định",
+    "ownerId": 5,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 2,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 1,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 30,
+    "title": "Phòng Trọ Giá Rẻ",
+    "price": 2000000,
+    "address": "Thái Dũng, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "https://res.cloudinary.com/dfyrnocnr/video/upload/c_pad,h_1280,w_720,f_mp4/v1779265428/homeverse/properties/zfwzk8tmcdklzgum7n14.mp4",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779265437/homeverse/general/ttlxqqqmlcux6ajj2l5p.jpg"
+    ],
+    "createdAt": "2026-05-20T08:24:09.770018",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 1.4,
+    "district": "Không xác định",
+    "ownerId": 4,
+    "reasons": [
+      "BANDIT_TRENDING",
+      "TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 2,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  },
+  {
+    "id": 31,
+    "title": "ggggg.",
+    "price": 2,
+    "address": "Thái Dũng, Phường Đồng Phú, Thành phố Đồng Nai, Việt Nam",
+    "videoUrl": "",
+    "images": [
+      "https://res.cloudinary.com/dfyrnocnr/image/upload/v1779873853/homeverse/general/d5iexdiz2aa30zwbr7bc.jpg"
+    ],
+    "createdAt": "2026-05-27T09:24:18.732029",
+    "isPromoted": false,
+    "itemType": "property",
+    "score": 0.6,
+    "district": "Không xác định",
+    "ownerId": 4,
+    "reasons": [
+      "BANDIT_TRENDING"
+    ],
+    "ownerTrustScore": null,
+    "viewCount": 0,
+    "likeCount": 0,
+    "saveCount": 0,
+    "isLiked": false,
+    "isSaved": false,
+    "commentCount": 0,
+    "contactCount": 0,
+    "primarySource": "TRENDING",
+    "shareCount": 0
+  }
+]

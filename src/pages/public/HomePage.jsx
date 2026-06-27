@@ -326,6 +326,22 @@ const HomePage = () => {
 
       let newData = res.data?.content || res.data?.items || res.data || [];
 
+      // Lọc bỏ tin đã ẩn hoặc hết hạn bằng cách đối chiếu với danh sách tin ACTIVE
+      try {
+        const publicRes = await axiosClient.get('/public/properties', { params: { size: 1000, status: 'ACTIVE' } });
+        const publicData = publicRes.data?.result?.content || publicRes.data?.data?.content || publicRes.data?.content || (Array.isArray(publicRes.data?.result) ? publicRes.data.result : []);
+        const activeIds = new Set(publicData.map(p => p.id));
+        
+        newData = newData.filter(item => activeIds.has(item.id));
+      } catch (err) {
+        // Fallback filter
+        newData = newData.filter(item => {
+          if (item.status === 'EXPIRED' || item.status === 'HIDDEN') return false;
+          if (item.expiresAt && new Date(item.expiresAt) < new Date()) return false;
+          return true;
+        });
+      }
+
       // 🟢 XỬ LÝ LỖI BACKEND TRẢ VỀ QUÁ NHIỀU TIN (Client-side Pagination)
       // Nếu backend không phân trang (trả về mảng trực tiếp dài hơn size yêu cầu), ta tự cắt
       if (Array.isArray(res.data) && newData.length > 8) {
@@ -388,6 +404,13 @@ const HomePage = () => {
 
       const rawData = res.data?.result || res.data?.data || res.data;
       let allRooms = rawData?.content || rawData || [];
+
+      // Lọc bỏ tin đã ẩn hoặc hết hạn
+      allRooms = allRooms.filter(item => {
+        if (item.status === 'EXPIRED' || item.status === 'HIDDEN') return false;
+        if (item.expiresAt && new Date(item.expiresAt) < new Date()) return false;
+        return true;
+      });
 
       // Sắp xếp: VIP/Promoted trước → mới nhất sau
       const sortedList = [...allRooms].sort((a, b) => {

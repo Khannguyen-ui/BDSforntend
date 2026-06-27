@@ -116,7 +116,15 @@ const SearchMap = () => {
       const finalParams = { ...urlParams, ...apiParams, size: 50 }; // Lấy 50 phòng trên bản đồ
       
       const res = await roomService.searchRooms(finalParams);
-      const fetchedRooms = res.data?.content || [];
+      let fetchedRooms = res.data?.content || [];
+
+      // Lọc bỏ tin đã ẩn hoặc hết hạn
+      fetchedRooms = fetchedRooms.filter(item => {
+        if (item.status === 'EXPIRED' || item.status === 'HIDDEN') return false;
+        if (item.expiresAt && new Date(item.expiresAt) < new Date()) return false;
+        return true;
+      });
+
       //console.log("Dữ liệu phòng nhận được từ API:", fetchedRooms.slice(0, 3));
       setRooms(fetchedRooms);
     } catch (error) {

@@ -462,7 +462,15 @@ const FilterPage = () => {
       const res = await roomService.searchRooms(params);
 
       let data = res.data.content || [];
-      setTotalElements(res.data.totalElements || 0);
+
+      // Lọc bỏ tin đã ẩn hoặc hết hạn
+      data = data.filter(item => {
+        if (item.status === 'EXPIRED' || item.status === 'HIDDEN') return false;
+        if (item.expiresAt && new Date(item.expiresAt) < new Date()) return false;
+        return true;
+      });
+
+      setTotalElements(data.length > 0 ? res.data.totalElements : 0);
 
       // Ưu tiên VIP lên đầu (client-side sort)
       data.sort((a, b) => {
