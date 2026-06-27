@@ -558,14 +558,14 @@ const HomePage = () => {
         <div className="bg-[#f96302] py-4 sticky top-0 z-50 shadow-md">
           <div className="max-w-6xl mx-auto px-4">
             {/* Thêm class 'relative' để dropdown bám theo div này */}
-            <div className="bg-white p-1.5 rounded-lg flex flex-col md:flex-row items-center gap-2 relative">
+            <div className="bg-white p-1.5 rounded-lg flex items-center gap-2 relative">
 
               {/* INPUT TÌM KIẾM */}
               <Input
-                prefix={<SearchOutlined className="text-gray-400 text-lg mr-2" />}
+                prefix={<SearchOutlined className="text-gray-400 text-base md:text-lg mr-1 md:mr-2" />}
                 placeholder="Tìm phòng trọ, căn hộ..."
                 variant="borderless"
-                className="flex-grow text-base"
+                className="flex-grow text-sm md:text-base px-1 md:px-2"
                 value={filters.keyword}
                 onChange={e => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
 
@@ -710,7 +710,7 @@ const HomePage = () => {
               )}
               {/* --- KẾT THÚC PHẦN LỊCH SỬ --- */}
 
-              <div className="hidden md:block w-[1px] h-6 bg-gray-200"></div>
+              <div className="hidden md:block w-[1px] h-6 bg-gray-200 mx-1"></div>
 
 
 
@@ -738,7 +738,7 @@ const HomePage = () => {
               <Button
                 type="primary"
                 size="large"
-                className="px-8 font-bold h-10 bg-[#f96302] text-white border-none hover:bg-[#d85502] transition-all"
+                className="px-4 sm:px-8 font-bold h-10 bg-[#f96302] text-white border-none hover:bg-[#d85502] transition-all whitespace-nowrap text-xs sm:text-sm md:text-base flex-shrink-0"
                 onClick={handleSearchNavigate}
               >
                 TÌM NGAY

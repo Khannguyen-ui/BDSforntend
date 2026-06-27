@@ -143,7 +143,7 @@ const SearchMap = () => {
         className={`transition-all duration-500 ease-in-out border-r flex flex-col shadow-2xl z-20 bg-white
           ${isExpanded ? 'w-[0px] md:w-[80px] opacity-0 md:opacity-100' : 'w-full md:w-[420px]'}`}
       >
-        <div className={`p-4 border-b whitespace-nowrap ${isExpanded ? 'hidden' : 'block'}`}>
+        <div className={`p-4 pr-16 border-b whitespace-nowrap ${isExpanded ? 'hidden' : 'block'}`}>
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} className="mb-2 p-0">Quay lại</Button>
           <Title level={4} className="m-0 uppercase text-sm tracking-widest text-orange-600">Phòng gần bạn</Title>
         </div>

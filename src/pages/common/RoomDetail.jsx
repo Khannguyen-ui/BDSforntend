@@ -1157,16 +1157,16 @@ const RoomDetail = () => {
                                 {formatEnumLabel(FURNISHING_STATUS_LABELS, room.furnishingStatus)}
                             </div>
 
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-baseline gap-4">
-                                    <span className="text-red-600 font-bold text-2xl">
+                            <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+                                <div className="flex items-baseline gap-3 flex-shrink-0">
+                                    <span className="text-red-600 font-bold text-2xl whitespace-nowrap">
                                         {formatPriceByTransaction(room.price, room.transactionType)}
                                     </span>
-                                    <span className="text-gray-600 text-sm font-medium">{room.area} m²</span>
+                                    <span className="text-gray-600 text-sm font-medium whitespace-nowrap">{room.area} m²</span>
                                 </div>
 
                                 {/* Cum nut Like, Save va So sanh */}
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center flex-wrap gap-2">
                                     <Button
                                         icon={<AimOutlined />}
                                         className="border-orange-500 text-orange-500 hover:text-orange-600 hover:border-orange-600 font-medium flex items-center"
@@ -2059,17 +2059,16 @@ const RoomDetail = () => {
             </div>
 
             {/* --- [MỚI] FIXED BOTTOM BAR (CHO MOBILE) --- */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-50 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                <div>
-                    <div className="text-xs text-gray-500">Giá thuê</div>
-                    <div className="text-red-600 font-bold text-lg">{room.price?.toLocaleString()} đ</div>
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-50 flex justify-between items-center gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                <div className="flex-shrink-0">
+                    <div className="text-xs text-gray-500">{room.transactionType === 'FOR_SALE' ? 'Giá bán' : 'Giá thuê'}</div>
+                    <div className="text-red-600 font-bold text-[17px] whitespace-nowrap">{formatPriceByTransaction(room.price, room.transactionType)}</div>
                 </div>
                 <Button
                     type="primary"
                     size="large"
-                    block
                     disabled={isOwnRoom}
-                    className="bg-orange-600 hover:bg-orange-500 font-bold h-12 mb-3"
+                    className="bg-orange-600 hover:bg-orange-500 font-bold h-11 flex-grow"
                     icon={<CalendarOutlined />}
                     onClick={() => {
                         if (!user) {

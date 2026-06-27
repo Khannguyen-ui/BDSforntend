@@ -1134,13 +1134,13 @@ const FilterPage = () => {
           <Row gutter={24}>
             {/* Cột Trái: Danh sách tin */}
             <Col xs={24} md={24}>
-              <div className="flex justify-between items-center border-b border-gray-200 mb-4 pb-2">
-                <div className="flex gap-6 text-sm font-bold">
-                  <span onClick={() => setActiveTab('ALL')} className={`${activeTab === 'ALL' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-2 cursor-pointer`}>Tất cả</span>
-                  <span onClick={() => { setActiveTab('INDIVIDUAL'); message.info('Tính năng lọc theo Cá nhân sắp ra mắt!'); }} className={`${activeTab === 'INDIVIDUAL' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-2 cursor-pointer`}>Cá nhân</span>
-                  <span onClick={() => { setActiveTab('BROKER'); message.info('Tính năng lọc theo Môi giới sắp ra mắt!'); }} className={`${activeTab === 'BROKER' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-2 cursor-pointer`}>Môi giới</span>
+              <div className="flex flex-wrap justify-between items-center border-b border-gray-200 mb-4 pb-2 gap-3">
+                <div className="flex flex-wrap gap-4 sm:gap-6 text-sm font-bold">
+                  <span onClick={() => setActiveTab('ALL')} className={`${activeTab === 'ALL' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-1 cursor-pointer whitespace-nowrap`}>Tất cả</span>
+                  <span onClick={() => { setActiveTab('INDIVIDUAL'); message.info('Tính năng lọc theo Cá nhân sắp ra mắt!'); }} className={`${activeTab === 'INDIVIDUAL' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-1 cursor-pointer whitespace-nowrap`}>Cá nhân</span>
+                  <span onClick={() => { setActiveTab('BROKER'); message.info('Tính năng lọc theo Môi giới sắp ra mắt!'); }} className={`${activeTab === 'BROKER' ? 'border-b-2 border-[#f96302] text-[#f96302]' : 'text-gray-500 hover:text-black font-normal'} pb-1 cursor-pointer whitespace-nowrap`}>Môi giới</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center justify-between w-full md:w-auto gap-2 text-sm text-gray-600 md:ml-auto mt-1 md:mt-0">
                   <Select
                     variant="borderless"
                     value={sortOrder}
@@ -1150,12 +1150,14 @@ const FilterPage = () => {
                       { label: 'Giá từ thấp đến cao', value: 'price_asc' },
                       { label: 'Giá từ cao đến thấp', value: 'price_desc' }
                     ]}
-                    className="text-gray-600 min-w-[160px] !p-0 font-medium"
+                    className="text-gray-600 min-w-[150px] !p-0 font-medium"
                   />
-                  <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-                  <div className="flex bg-gray-100 rounded p-0.5">
-                    <Button type="text" size="small" icon={<UnorderedListOutlined />} className={viewMode === 'list' ? "bg-white shadow-sm text-[#f96302]" : "text-gray-400"} onClick={() => setViewMode('list')} />
-                    <Button type="text" size="small" icon={<AppstoreOutlined />} className={viewMode === 'grid' ? "bg-white shadow-sm text-[#f96302]" : "text-gray-400"} onClick={() => setViewMode('grid')} />
+                  <div className="flex items-center gap-2">
+                    <div className="w-[1px] h-4 bg-gray-300 mx-1 hidden sm:block"></div>
+                    <div className="flex bg-gray-100 rounded p-0.5">
+                      <Button type="text" size="small" icon={<UnorderedListOutlined />} className={viewMode === 'list' ? "bg-white shadow-sm text-[#f96302]" : "text-gray-400"} onClick={() => setViewMode('list')} />
+                      <Button type="text" size="small" icon={<AppstoreOutlined />} className={viewMode === 'grid' ? "bg-white shadow-sm text-[#f96302]" : "text-gray-400"} onClick={() => setViewMode('grid')} />
+                    </div>
                   </div>
                 </div>
               </div>

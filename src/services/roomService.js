@@ -188,7 +188,7 @@ const roomService = {
       // GỌI TRỰC TIẾP ELASTICSEARCH API THEO SPEC VỚI THAM SỐ CHUẨN SẠCH
       const res = await axiosClient.get('/search/properties', { params: searchApiParams });
 
-      const resultData = res.data?.result || res.data?.data || res.data;
+      let resultData = res.data?.result || res.data?.data || res.data;
 
       // Dữ liệu trả về (có thể rỗng nếu không có bài viết nào khớp với bộ lọc)
       let content = Array.isArray(resultData) ? resultData : (resultData?.content || []);
