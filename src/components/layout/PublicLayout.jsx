@@ -201,10 +201,10 @@ const PublicLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
 
           {/* Left section containing logo and navigation links */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2 md:gap-8 flex-shrink-0">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 text-[#f96302] font-bold text-2xl hover:text-orange-600">
-              <HomeOutlined /> Homevers
+            <Link to="/" className="flex items-center gap-1 md:gap-2 text-[#f96302] font-bold text-lg sm:text-xl md:text-2xl hover:text-orange-600">
+              <HomeOutlined /> <span>Homevers</span>
             </Link>
 
             {/* Navigation Links */}
@@ -219,15 +219,15 @@ const PublicLayout = () => {
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0">
 
             {/* NÚT REELS TỔNG - LUÔN HIỆN ĐỂ TEST */}
             <Tooltip title="Lướt Video (Reels)">
               <div
-                className="cursor-pointer flex items-center justify-center bg-gray-100 hover:bg-orange-100 w-9 h-9 rounded-full transition-colors"
+                className="cursor-pointer flex items-center justify-center bg-gray-100 hover:bg-orange-100 w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full transition-colors"
                 onClick={() => setIsReelsOpen(true)}
               >
-                <PlayCircleFilled className="text-xl text-[#f96302]" />
+                <PlayCircleFilled className="text-base sm:text-lg md:text-xl text-[#f96302]" />
               </div>
             </Tooltip>
 
@@ -256,17 +256,17 @@ const PublicLayout = () => {
             {(!user || user.role !== 'ADMIN') && (
               <Button
                 type="primary"
-                className="bg-black hover:bg-gray-800 border-none rounded-full font-bold px-6 h-9 flex items-center"
+                className="bg-black hover:bg-gray-800 border-none rounded-full font-bold px-2 sm:px-4 md:px-6 h-7 sm:h-8 md:h-9 flex items-center text-[10px] sm:text-xs md:text-sm"
                 icon={<PlusCircleOutlined />}
                 onClick={handlePostAd}
               >
-                Đăng tin
+                <span className="hidden sm:inline">Đăng tin</span>
               </Button>
             )}
 
             {/* User Dropdown */}
             {loading ? (
-              <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
             ) : user ? (
               <Dropdown
                 menu={userMenu}
@@ -274,18 +274,18 @@ const PublicLayout = () => {
                 trigger={['click']}
                 classNames="w-[300px]" // Menu rộng
               >
-                <Space className="cursor-pointer hover:bg-gray-100 py-1 px-2 rounded-full transition border border-gray-200 flex items-center gap-2">
-                  <Avatar src={user.avatarUrl || user.avatar} icon={<UserOutlined />} className="bg-orange-500" />
+                <Space className="cursor-pointer hover:bg-gray-100 py-1 px-1 sm:px-2 rounded-full transition border border-gray-200 flex items-center gap-1 md:gap-2">
+                  <Avatar src={user.avatarUrl || user.avatar} icon={<UserOutlined />} className="bg-orange-500 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                   <span className="hidden md:inline font-medium text-gray-700 max-w-[100px] truncate">
                     {user.fullName}
                   </span>
-                  <DownOutlined className="text-[10px] text-gray-400" />
+                  <DownOutlined className="text-[10px] text-gray-400 hidden sm:block" />
                 </Space>
               </Dropdown>
             ) : (
               <Space>
                 <Link to="/login">
-                  <Button type="text" className="font-medium hover:bg-gray-100 rounded-full">Đăng nhập</Button>
+                  <Button type="text" className="font-medium hover:bg-gray-100 rounded-full px-1 sm:px-2 md:px-4 text-[11px] sm:text-xs md:text-sm">Đăng nhập</Button>
                 </Link>
 
               </Space>

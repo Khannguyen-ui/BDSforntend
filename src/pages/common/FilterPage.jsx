@@ -661,11 +661,11 @@ const FilterPage = () => {
                   </h3>
 
                   <div className="text-xs text-gray-500 mb-1 line-clamp-1">{room.description || room.address}</div>
-                  <div className="flex items-baseline gap-3 mt-1">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mt-1">
                     <span className="text-[#d0021b] font-bold text-[16px]">{formatCurrency(room.price)}/tháng</span>
-                    <span className="text-gray-500 text-sm">{room.area} m²</span>
-                    <span className="text-gray-500 text-sm">{room.bedrooms} Phòng</span>
-                    <span className="text-gray-500 text-sm">{room.bathrooms} WC</span>
+                    <span className="text-gray-500 text-sm whitespace-nowrap">{room.area} m²</span>
+                    <span className="text-gray-500 text-sm whitespace-nowrap">{room.bedrooms} Phòng</span>
+                    <span className="text-gray-500 text-sm whitespace-nowrap">{room.bathrooms} WC</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2 flex items-center gap-1"><EnvironmentOutlined /> {room.address}</div>
                 </div>
@@ -734,11 +734,11 @@ const FilterPage = () => {
                 {isVip && <CrownFilled className="mt-1 flex-shrink-0" />} {room.title}
               </h3>
 
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-[#d0021b] font-bold text-[15px]">{formatCurrency(room.price)}/tháng</span>
-                <span className="text-gray-400 text-xs">• {room.area} m²</span>
-                <span className="text-gray-400 text-xs">• {room.bedrooms} Phòng</span>
-                <span className="text-gray-400 text-xs">• {room.bathrooms} WC</span>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1">
+                <span className="text-[#d0021b] font-bold text-[15px] whitespace-nowrap">{formatCurrency(room.price)}/tháng</span>
+                <span className="text-gray-400 text-xs whitespace-nowrap">• {room.area} m²</span>
+                <span className="text-gray-400 text-xs whitespace-nowrap">• {room.bedrooms} Phòng</span>
+                <span className="text-gray-400 text-xs whitespace-nowrap">• {room.bathrooms} WC</span>
               </div>
               <div className="text-xs text-gray-500 flex items-center gap-1 mb-2 truncate">
                 <EnvironmentOutlined /> {room.address}
