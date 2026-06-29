@@ -331,7 +331,7 @@ const HomePage = () => {
         const publicRes = await axiosClient.get('/public/properties', { params: { size: 1000, status: 'ACTIVE' } });
         const publicData = publicRes.data?.result?.content || publicRes.data?.data?.content || publicRes.data?.content || (Array.isArray(publicRes.data?.result) ? publicRes.data.result : []);
         const activeIds = new Set(publicData.map(p => p.id));
-        
+
         newData = newData.filter(item => activeIds.has(item.id));
       } catch (err) {
         // Fallback filter
@@ -1051,7 +1051,10 @@ const HomePage = () => {
                               )}
                             </div>
                           }
-                          onClick={() => navigate(`/rooms/${room.id}`)}
+                          onClick={() => {
+                            interactionService.trackClick(room.id).catch(() => { });
+                            navigate(`/rooms/${room.id}`);
+                          }}
                         >
                           {/* 🟢 5. TIÊU ĐỀ VIP: Có icon Vương miện đầu dòng */}
                           <h3 className={`font-bold text-sm mb-1 line-clamp-2 h-10 flex items-start gap-1 ${isVip ? 'text-[#f96302]' : 'text-gray-800'}`} title={room.title}>
