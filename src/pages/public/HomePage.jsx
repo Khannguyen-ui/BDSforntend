@@ -205,11 +205,6 @@ const HomePage = () => {
       console.log("Lỗi tải top tìm kiếm:", e);
     }
   };
-  const interactionService = {
-  trackClick: (propertyId) => {
-    return axiosClient.post(`/properties/${propertyId}/click`);
-  },
-};
 
 
   // Tự động gọi API gợi ý khi gõ
@@ -1058,7 +1053,10 @@ const HomePage = () => {
                             </div>
                           }
                           onClick={() => {
-                            interactionService.trackClick(room.id).catch(() => { });
+                            interactionService
+                              .trackClick(room.id, room.primarySource || "TRENDING")
+                              .catch(() => { });
+
                             navigate(`/rooms/${room.id}`);
                           }}
                         >

@@ -42,13 +42,17 @@ const interactionService = {
     );
   },
 
-  trackClick: (propertyId) => {
+  trackClick: (propertyId, source) => {
     return axiosClient.post(
-      `/properties/${propertyId}/click`,
-      null,
-      { headers: getHeaders() }
+        `/properties/${propertyId}/click`,
+        {
+            source,
+        },
+        {
+            headers: getHeaders(),
+        }
     );
-  },
+},
 
   shareProperty: (propertyId) => {
     return axiosClient.post(

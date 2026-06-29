@@ -78,7 +78,10 @@ const SourceAnalytics = () => {
 
   const avgCtr = totalImpressions === 0 ? 0 : (totalClicks / totalImpressions) * 100;
 
-  const formatPercent = (value) => `${Number(value || 0).toFixed(2)}%`;
+  const formatPercent = (value) => {
+    const num = Number(value || 0);
+    return `${num.toFixed(2)}%`;
+  };
 
   const getSourceLabel = (source) => {
     const labels = {
@@ -159,6 +162,7 @@ const SourceAnalytics = () => {
           percent={Number(record.ctr || 0)}
           size="small"
           status={Number(record.ctr || 0) >= 10 ? 'success' : 'normal'}
+          format={(percent) => `${Number(percent || 0).toFixed(2)}%`}
         />
       ),
     },

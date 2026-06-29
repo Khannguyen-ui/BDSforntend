@@ -54,6 +54,7 @@ export default defineConfig(({ command }) => {
           ws: true
         },
         '/properties': 'http://127.0.0.1:8086',
+        '/owners': 'http://127.0.0.1:8086',
         '/amenities': 'http://127.0.0.1:8086',
         '/admin/master-data/amenities': 'http://127.0.0.1:8086',
         '/admin/master-data/packages': 'http://127.0.0.1:8080',
