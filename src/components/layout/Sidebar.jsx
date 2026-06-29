@@ -129,6 +129,7 @@ const Sidebar = () => {
       type: 'group', label: 'Quản lý', children: [
         { key: '/admin/dashboard', icon: <PieChartOutlined />, label: 'Tổng quan' },
         { key: '/admin/recommend-dashboard', icon: <RocketOutlined style={{ color: '#E03C31' }} />, label: 'AI & Đề xuất' },
+        { key: '/admin/source-analytics', icon: <CheckSquareOutlined />, label: 'CTR' },
         { key: '/admin/approve-rooms', icon: <CheckSquareOutlined />, label: 'Duyệt tin đăng' },
         { key: '/admin/rooms', icon: <DatabaseOutlined />, label: 'Quản lý tin đăng' },
         { key: '/admin/projects', icon: <BankOutlined />, label: 'Quản lý dự án' },

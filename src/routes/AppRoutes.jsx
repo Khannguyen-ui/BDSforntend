@@ -53,6 +53,7 @@ import ProjectManagement from '../pages/admin/ProjectManagement';
 import MasterData from '../pages/admin/MasterData';
 import UserManagement from '../pages/admin/UserManagement';
 import ServicePackages from '../pages/admin/ServicePackages';
+import SourceAnalytics from '../pages/admin/SourceAnalytics';
 
 const AppRoutes = () => {
     return (
@@ -129,6 +130,7 @@ const AppRoutes = () => {
                     <Route path="master-data" element={<MasterData />} />
                     <Route path="users" element={<UserManagement />} />
                     <Route path="service-packages" element={<ServicePackages />} />
+                    <Route path="source-analytics" element={<SourceAnalytics />} />
                 </Route>
             </Route>
 

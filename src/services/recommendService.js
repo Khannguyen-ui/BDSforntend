@@ -132,6 +132,20 @@ const recommendService = {
 
   checkFraudStatus: async (userId) => {
     return axiosClient.get(`/recommend/fraud/users/${normalizeNumber(userId)}`);
+  },
+  getSourceCtr: async () => {
+    return axiosClient.get('/recommend/analytics/source/ctr');
+  },
+
+  getBestSource: async () => {
+    return axiosClient.get('/recommend/analytics/source/best');
+  },
+
+  getWorstSource: async () => {
+    return axiosClient.get('/recommend/analytics/source/worst');
+  },
+  checkFraudStatus: async (userId) => {
+    return axiosClient.get(`/recommend/fraud/users/${normalizeNumber(userId)}`);
   }
 };
 
