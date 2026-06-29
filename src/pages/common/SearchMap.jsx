@@ -113,7 +113,7 @@ const SearchMap = () => {
     try {
       // Lấy các bộ lọc từ URL (giá, loại phòng...) gộp chung với tọa độ/bán kính của Map
       const urlParams = Object.fromEntries(searchParams.entries());
-      const finalParams = { ...urlParams, ...apiParams, size: 500 }; // Lấy 500 phòng trên bản đồ
+      const finalParams = {  transactionType: 'ALL', ...urlParams, ...apiParams, size: 500 }; // Lấy 500 phòng trên bản đồ
       
       const res = await roomService.searchRooms(finalParams);
       let fetchedRooms = res.data?.content || [];
