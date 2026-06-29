@@ -19,7 +19,7 @@ import searchHistoryService from '../../services/searchHistoryService';
 import axiosClient from '../../config/axiosClient';
 import ReelsViewer from '../../components/modals/ReelsViewer';
 import ProvinceImage from '../../components/common/ProvinceImage';
-
+import interactionService from '../../services/interactionService';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -205,6 +205,12 @@ const HomePage = () => {
       console.log("Lỗi tải top tìm kiếm:", e);
     }
   };
+  const interactionService = {
+  trackClick: (propertyId) => {
+    return axiosClient.post(`/properties/${propertyId}/click`);
+  },
+};
+
 
   // Tự động gọi API gợi ý khi gõ
   useEffect(() => {
