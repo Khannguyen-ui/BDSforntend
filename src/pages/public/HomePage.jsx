@@ -7,7 +7,7 @@ import {
   SearchOutlined, EnvironmentFilled, CheckOutlined,
   DownOutlined, HeartOutlined, RightOutlined,
   HistoryOutlined,
-  CloseOutlined, CrownFilled, FireFilled, PlayCircleFilled
+  CloseOutlined, CrownFilled, FireFilled, PlayCircleFilled, CalendarOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
