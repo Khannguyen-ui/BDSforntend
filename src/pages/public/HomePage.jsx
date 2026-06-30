@@ -20,6 +20,7 @@ import axiosClient from '../../config/axiosClient';
 import ReelsViewer from '../../components/modals/ReelsViewer';
 import ProvinceImage from '../../components/common/ProvinceImage';
 import interactionService from '../../services/interactionService';
+import Footer from '../../components/layout/Footer';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -1116,5 +1117,5 @@ const HomePage = () => {
     </ConfigProvider>
   );
 };
-
+<Footer/>
 export default HomePage;

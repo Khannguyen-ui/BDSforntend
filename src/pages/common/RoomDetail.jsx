@@ -1446,7 +1446,7 @@ const RoomDetail = () => {
                             <div className="mt-6 bg-purple-50 p-3 rounded-lg flex gap-3 items-start">
                                 <InfoCircleFilled className="text-purple-400 mt-1" />
                                 <p className="text-[10px] text-purple-700 m-0 leading-relaxed">
-                                    Dữ liệu giá được tổng hợp và xử lý từ các tin đăng trên hệ thống Smart Rental.
+                                    Dữ liệu giá được tổng hợp và xử lý từ các tin đăng trên hệ thống Smart .
                                     Bạn hãy lưu ý về tin đăng nằm ngoài khoảng giá chúng tôi gợi ý để cân nhắc kỹ trước khi giao dịch.
                                 </p>
                             </div>

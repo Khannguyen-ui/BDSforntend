@@ -15,7 +15,7 @@ const QUICK_REPLIES = [
 
 const createWelcomeMessage = () => ({
   role: "ai",
-  text: "Chào bạn 👋 Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠",
+  text: "Chào bạn  Mình là **Smart Rental AI** — trợ lý tìm phòng thông minh của bạn!\n\nBạn đang tìm kiếm loại phòng gì? 🏠",
   time: new Date().toISOString(),
   items: [],
 });

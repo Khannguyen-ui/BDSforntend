@@ -69,7 +69,7 @@ const AdminLogin = () => {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold mb-8">
               <SafetyCertificateFilled className="text-blue-400" />
-              Smart Rental Admin
+              HomeVeres Admin
             </div>
 
             <h1 className="text-4xl font-extrabold leading-tight mb-4">

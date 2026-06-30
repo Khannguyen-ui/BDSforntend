@@ -75,7 +75,7 @@ const Login = () => {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur px-4 py-2 rounded-full text-sm font-semibold mb-8">
               <HomeFilled />
-              Homevers Smart Rental
+              Homevers
             </div>
 
             <h1 className="text-4xl font-extrabold leading-tight mb-4">
@@ -121,7 +121,7 @@ const Login = () => {
               </Title>
 
               <Text type="secondary" className="block mt-2">
-                Chào mừng bạn đến với Homevers Smart Rental
+                Chào mừng bạn đến với Homevers 
               </Text>
             </div>
 

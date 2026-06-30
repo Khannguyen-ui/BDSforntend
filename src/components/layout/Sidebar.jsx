@@ -232,7 +232,7 @@ const Sidebar = () => {
         }}
         style={{ color: '#E03C31' }}
       >
-        <HomeOutlined className="mr-2" /> SMART RENTAL
+        <HomeOutlined className="mr-2" /> HomeVeres
       </div>
 
       {/* --- USER INFO CARD --- */}
