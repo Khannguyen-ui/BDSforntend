@@ -203,15 +203,15 @@ const PublicLayout = () => {
 
           <div className="flex items-center gap-4 md:gap-8 flex-shrink-0">
 
-            {/* LOGO GỒM CẢ ẢNH VÀ CHỮ HOMEVERES */}
+       
             <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
               <img
                 src={systemLogo}
                 alt="BDS Logo"
-                className="h-10 w-auto object-contain"
+                className="h-9 w-auto object-contain flex-shrink-0" // Giảm nhẹ chiều cao logo xuống h-9 để thanh thoát hơn
               />
-              {/* Thêm lại chữ hệ thống ở đây */}
-              <span className="text-[#E03C31] font-bold text-xl md:text-2xl tracking-tight hidden sm:inline">
+              {/* Hạ cỡ chữ xuống text-base (màn hình nhỏ) và tối đa text-lg (màn hình lớn), dùng leading-none để căn giữa trục ngang với ảnh */}
+              <span className="text-[#E03C31] font-bold text-base md:text-lg tracking-tight hidden sm:inline leading-none self-center">
                 HomeVeres
               </span>
             </Link>
