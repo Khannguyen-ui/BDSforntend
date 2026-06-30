@@ -30,6 +30,7 @@ import { useAuth, useAdminAuth } from '../../hooks/useAuth';
 import paymentService from '../../services/paymentService';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Badge } from 'antd';
+import systemLogo from '../../assets/logo.png';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -174,7 +175,6 @@ const Sidebar = () => {
       ]
     },
 
-    // --- 4. MỤC NÂNG CẤP (Dùng key /kyc như bạn yêu cầu) ---
     { type: 'divider' },
     {
       key: '/kyc',

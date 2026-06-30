@@ -17,6 +17,7 @@ import notificationService from '../../services/notificationService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ReelsViewer from '../modals/ReelsViewer';
 import Footer from './Footer';
+import systemLogo from '../../assets/logo.png';
 const PublicLayout = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
@@ -202,16 +203,16 @@ const PublicLayout = () => {
 
           {/* Left section containing logo and navigation links */}
           <div className="flex items-center gap-4 md:gap-8 flex-shrink-0">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-1 md:gap-2 text-[#f96302] font-bold text-xl md:text-2xl hover:text-orange-600">
-              <HomeOutlined /> <span className="hidden sm:inline">Homevers</span>
+            <Link to="/" className="flex items-center hover:opacity-9 transition-opacity">
+              <img
+                src={systemLogo}
+                alt="BDS Logo"
+                className="h-10 w-auto object-contain" // h-10 ôm vừa vặn thanh Header cao 16 (h-16)
+              />
             </Link>
 
-            {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-6">
-              {/* <Link to="/filter" className="text-gray-600 hover:text-[#f96302] font-bold text-sm transition-colors">
-                Tìm phòng
-              </Link> */}
+
               <Link to="/analytics" className="text-gray-600 hover:text-[#f96302] font-bold text-sm transition-colors flex items-center gap-1">
                 <LineChartOutlined /> Góc nhìn thị trường
               </Link>
