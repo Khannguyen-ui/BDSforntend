@@ -17,7 +17,7 @@ import notificationService from '../../services/notificationService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ReelsViewer from '../modals/ReelsViewer';
 import Footer from './Footer';
-import systemLogo from '../../assets/logo.png';
+import systemLogo from '../../assets/logo1.png';
 const PublicLayout = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
@@ -201,18 +201,23 @@ const PublicLayout = () => {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
 
-          {/* Left section containing logo and navigation links */}
           <div className="flex items-center gap-4 md:gap-8 flex-shrink-0">
-            <Link to="/" className="flex items-center hover:opacity-9 transition-opacity">
+
+            {/* LOGO GỒM CẢ ẢNH VÀ CHỮ HOMEVERES */}
+            <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
               <img
                 src={systemLogo}
                 alt="BDS Logo"
-                className="h-10 w-auto object-contain" // h-10 ôm vừa vặn thanh Header cao 16 (h-16)
+                className="h-10 w-auto object-contain"
               />
+              {/* Thêm lại chữ hệ thống ở đây */}
+              <span className="text-[#E03C31] font-bold text-xl md:text-2xl tracking-tight hidden sm:inline">
+                HomeVeres
+              </span>
             </Link>
 
+            {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-6">
-
               <Link to="/analytics" className="text-gray-600 hover:text-[#f96302] font-bold text-sm transition-colors flex items-center gap-1">
                 <LineChartOutlined /> Góc nhìn thị trường
               </Link>

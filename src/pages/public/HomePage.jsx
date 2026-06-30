@@ -85,7 +85,7 @@ const TypeSelectContent = ({ currentType, onClose, onApply }) => {
   const options = [
     { label: 'Tất cả phòng trọ', value: 'ALL' },
     { label: 'Thuê nguyên căn', value: 'HOUSE' },
-    { label: 'Ở ghép (KTX)', value: 'ROOM' }
+  
   ];
   return (
     <div className="w-[200px] p-1">
@@ -1023,7 +1023,7 @@ const HomePage = () => {
                               <img alt={room.title} src={getImageUrl(room)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
 
                               {/* Tag Loại hình (giữ nguyên) */}
-                              <Tag color="#f96302" className="absolute top-2 left-2 border-none font-semibold text-xs">{(room.propertyType === 'HOUSE' || room.propertyType === 'APARTMENT' || room.rentalType === 'WHOLE') ? 'Nguyên căn' : 'Ở ghép'}</Tag>
+                            
 
                               {isVip && (
                                 <Tag color="#fadb14" className="absolute top-2 right-2 border-none font-bold text-[10px] m-0 flex items-center gap-1 shadow-sm text-black px-1.5 py-0.5 z-10">

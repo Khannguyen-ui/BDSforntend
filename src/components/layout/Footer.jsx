@@ -11,7 +11,7 @@ import {
     HomeFilled // Dùng tạm làm logo
 } from '@ant-design/icons';
 import myQrCode from '../../assets/Qrpro.jpg';
-import systemLogo from '../../assets/logo.png';
+import systemLogo from '../../assets/logo1.png';
 
 const { Title, Text, Link } = Typography;
 

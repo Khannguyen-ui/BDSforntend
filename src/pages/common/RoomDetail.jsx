@@ -1926,9 +1926,7 @@ const RoomDetail = () => {
                                                             alt="rec"
                                                         />
 
-                                                        <Tag color="#f96302" className="absolute top-2 left-2 border-none text-[10px] z-10 font-bold uppercase">
-                                                            {item.rentalType === 'WHOLE' ? 'Nguyên căn' : 'Ở ghép'}
-                                                        </Tag>
+                                                       
 
                                                         {isVip && (
                                                             <Tag
