@@ -85,7 +85,7 @@ const TypeSelectContent = ({ currentType, onClose, onApply }) => {
   const options = [
     { label: 'Tất cả phòng trọ', value: 'ALL' },
     { label: 'Thuê nguyên căn', value: 'HOUSE' },
-  
+
   ];
   return (
     <div className="w-[200px] p-1">
@@ -1023,7 +1023,7 @@ const HomePage = () => {
                               <img alt={room.title} src={getImageUrl(room)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" />
 
                               {/* Tag Loại hình (giữ nguyên) */}
-                            
+
 
                               {isVip && (
                                 <Tag color="#fadb14" className="absolute top-2 right-2 border-none font-bold text-[10px] m-0 flex items-center gap-1 shadow-sm text-black px-1.5 py-0.5 z-10">
@@ -1104,7 +1104,97 @@ const HomePage = () => {
               </>
             )}
           </div>
+          {/* ========================================================================= */}
+          {/* SECTION 5: BÀI VIẾT HƯỚNG DẪN / TIN TỨC BẤT ĐỘNG SẢN (MỚI THÊM VÀO) */}
+          {/* ========================================================================= */}
+          <div className="mt-12 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+              <Title level={4} style={{ margin: 0 }}>Bài viết hướng dẫn</Title>
+              <Button type="link" className="text-gray-500 hover:text-[#f96302] p-0 flex items-center">
+                Xem thêm <RightOutlined className="text-xs ml-1" />
+              </Button>
+            </div>
 
+            <Row gutter={[24, 24]}>
+              {/* Cột trái: Bài viết lớn nổi bật */}
+              <Col xs={24} lg={14}>
+                <div className="group cursor-pointer flex flex-col h-full" onClick={() => navigate('/blog/1')}>
+                  <div className="relative overflow-hidden rounded-xl h-[240px] md:h-[320px] w-full mb-3 shadow-sm">
+                    <img
+                      src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=cover"
+                      alt="Featured Article"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mb-2 font-medium">
+                    <span className="text-[#f96302] bg-orange-50 px-2.5 py-1 rounded-md font-semibold">Cẩm nang</span>
+                    <span className="flex items-center gap-1"><CalendarOutlined /> 30/06/2026</span>
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold text-gray-800 line-clamp-2 group-hover:text-[#f96302] transition-colors leading-snug mb-2">
+                    7 Bước Xác Thực Danh Tính eKYC An Toàn Tuyệt Đối Cho Chủ Trọ Lần Đầu Đăng Tin
+                  </h3>
+                  <p className="text-sm text-gray-500 line-clamp-2 md:line-clamp-3 leading-relaxed">
+                    Hướng dẫn chi tiết quy trình xác thực danh tính bằng công nghệ eKYC đột phá trên hệ thống HomeVeres, giúp tăng 200% độ tin cậy và phòng tránh các rủi ro lừa đảo đặt cọc phòng trọ trực tuyến.
+                  </p>
+                </div>
+              </Col>
+
+              {/* Cột phải: 2 bài viết nhỏ xếp chồng dọc */}
+              <Col xs={24} lg={10} className="flex flex-col gap-6">
+                {/* Bài nhỏ 1 */}
+                <div className="group cursor-pointer flex gap-4 border-b border-gray-100 pb-5 last:border-none last:pb-0" onClick={() => navigate('/blog/2')}>
+                  <div className="relative overflow-hidden rounded-xl w-[120px] md:w-[160px] h-[90px] md:h-[110px] flex-shrink-0 shadow-sm">
+                    <img
+                      src="https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=cover"
+                      alt="Article small 1"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-between py-0.5 overflow-hidden">
+                    <div>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-1 font-medium">
+                        <span className="text-[#f96302] font-semibold">Kinh nghiệm</span>
+                        <span>•</span>
+                        <span>2 tuần trước</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-gray-800 line-clamp-2 group-hover:text-[#f96302] transition-colors leading-snug mb-1">
+                        Kinh nghiệm tối ưu chi phí khi thuê căn hộ dịch vụ nguyên căn tại trung tâm
+                      </h4>
+                    </div>
+                    <p className="text-xs text-gray-400 line-clamp-1 hidden md:block">
+                      Bí quyết đàm phán hợp đồng, tiền cọc và cách tính tiền điện nước thông minh.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bài nhỏ 2 */}
+                <div className="group cursor-pointer flex gap-4" onClick={() => navigate('/blog/3')}>
+                  <div className="relative overflow-hidden rounded-xl w-[120px] md:w-[160px] h-[90px] md:h-[110px] flex-shrink-0 shadow-sm">
+                    <img
+                      src="https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=600&auto=format&fit=cover"
+                      alt="Article small 2"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-between py-0.5 overflow-hidden">
+                    <div>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-1 font-medium">
+                        <span className="text-[#f96302] font-semibold">Thị trường</span>
+                        <span>•</span>
+                        <span>1 tháng trước</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-gray-800 line-clamp-2 group-hover:text-[#f96302] transition-colors leading-snug mb-1">
+                        Báo cáo xu hướng thị trường bất động sản cho thuê phân khúc phòng trọ thông minh 2026
+                      </h4>
+                    </div>
+                    <p className="text-xs text-gray-400 line-clamp-1 hidden md:block">
+                      Phân tích nhu cầu tìm phòng khép kín có tích hợp giải pháp quản lý tự động trực tuyến.
+                    </p>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </div>
         </div>
       </div>
 
@@ -1117,5 +1207,5 @@ const HomePage = () => {
     </ConfigProvider>
   );
 };
-<Footer/>
+<Footer />
 export default HomePage;
