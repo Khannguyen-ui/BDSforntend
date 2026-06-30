@@ -17,7 +17,7 @@ import notificationService from '../../services/notificationService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ReelsViewer from '../modals/ReelsViewer';
 import Footer from './Footer';
-import systemLogo from '../../assets/logo1.png';
+import systemLogo from '../../assets/logo2.png';
 const PublicLayout = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
