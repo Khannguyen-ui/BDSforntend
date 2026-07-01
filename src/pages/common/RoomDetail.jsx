@@ -357,43 +357,57 @@ const RoomDetail = () => {
 
     // --- XỬ LÝ GỬI REVIEW (CHỈ GIỮ LẠI 1 HÀM NÀY) ---
     const handleSendReview = async (values) => {
-        if (!user) {
-            message.warning("Vui lòng đăng nhập để đánh giá!");
-            navigate('/login');
-            return;
-        }
+  if (!user) {
+    message.warning("Vui lòng đăng nhập để đánh giá!");
+    navigate("/login");
+    return;
+  }
 
-        setReviewLoading(true);
-        try {
-            // 1. Lấy danh sách URL ảnh từ fileList
-            // Lưu ý: Tùy thuộc vào việc bạn upload lên đâu (Cloudinary/S3), 
-            // URL sẽ nằm trong file.response.url hoặc file.url
-            const imageUrls = fileList
-                .filter(file => file.status === 'done')
-                .map(file => file.response?.url || file.url || file.thumbUrl);
+  if (!room?.ownerId) {
+    message.error("Không tìm thấy ownerId của chủ trọ");
+    return;
+  }
 
-            // 2. Gửi request
-            await reviewService.createReview({
-                roomId: Number(id),
-                rating: values.rating,
-                comment: values.comment,
-                reviewImages: imageUrls // Gửi mảng URL ảnh thực tế
-            });
+  setReviewLoading(true);
 
-            message.success("Cảm ơn bạn đã gửi đánh giá thành công!");
-            reviewForm.resetFields();
-            setFileList([]); // Xóa danh sách ảnh sau khi gửi thành công
+  try {
+    const imageUrls = fileList
+      .filter((file) => file.status === "done")
+      .map((file) => file.response?.url || file.url || file.thumbUrl)
+      .filter(Boolean);
 
-            const res = await reviewService.getRoomReviews(id);
-            const rawReviews = res.data?.result || res.data?.content || res.data;
-            setReviews(Array.isArray(rawReviews) ? rawReviews : []);
-        } catch (error) {
-            message.error(error.response?.data?.message || "Bạn chưa có thể đánh giá phòng này nếu chưa có thuê hay mua bán");
-        } finally {
-            setReviewLoading(false);
-        }
+    const payload = {
+      ownerId: Number(room.ownerId),
+      propertyId: Number(id),
+      rating: Number(values.rating),
+      comment: values.comment,
+      images: imageUrls,
     };
 
+    console.log("SEND OWNER REVIEW:", payload);
+
+    await reviewService.createOwnerReview(currentUserId, payload);
+
+    message.success("Cảm ơn bạn đã đánh giá chủ trọ!");
+    reviewForm.resetFields();
+    setFileList([]);
+
+    const res = await reviewService.getOwnerReviews(room.ownerId);
+    const rawReviews = res.data?.result || res.data;
+    setReviews(Array.isArray(rawReviews) ? rawReviews : []);
+  } catch (error) {
+    console.error("OWNER REVIEW ERROR RAW:", error);
+
+    message.error(
+      error?.response?.data?.message ||
+      error?.response?.data ||
+      error?.message ||
+      "Không thể gửi đánh giá chủ trọ"
+    );
+  } finally {
+    setReviewLoading(false);
+  }
+};
 
 
 
@@ -450,7 +464,7 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn — không thể lưu bài của chính mình!");
             return;
         }
-      
+
         setSaveLoading(true);
         // Optimistic UI
         const willSave = !isSaved;
@@ -934,8 +948,7 @@ const RoomDetail = () => {
 
                 // 3. Lấy danh sách review (Công khai)
                 try {
-                    const reviewRes = await reviewService.getRoomReviews(id);
-                    // Đảm bảo reviews luôn là mảng để tránh lỗi .map()
+                    const reviewRes = await reviewService.getOwnerReviews(currentRoomData.ownerId);
                     const rawReviews = reviewRes.data?.result || reviewRes.data?.content || reviewRes.data;
                     setReviews(Array.isArray(rawReviews) ? rawReviews : []);
                 } catch (revErr) {
@@ -971,7 +984,7 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn.");
             return;
         }
-        roomService.contactRoom(room.id).catch(() => { });
+        roomService.contactRoom(room.id, currentUserId).catch(() => {});
 
         recommendService.trackBehavior(
             room.id,
@@ -1009,7 +1022,7 @@ const RoomDetail = () => {
 
     const handleZalo = () => {
         if (room?.id) {
-            roomService.contactRoom(room.id).catch(() => { });
+            roomService.contactRoom(room.id, currentUserId).catch(() => {});
 
             recommendService.trackBehavior(
                 room.id,
@@ -1926,7 +1939,7 @@ const RoomDetail = () => {
                                                             alt="rec"
                                                         />
 
-                                                       
+
 
                                                         {isVip && (
                                                             <Tag

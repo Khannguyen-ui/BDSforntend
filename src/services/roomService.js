@@ -54,15 +54,18 @@ const roomService = {
     }
   },
 
-  contactRoom: async (propertyId) => {
-    try {
-      return await axiosClient.post(`/properties/${propertyId}/contact`);
-    } catch (error) {
-      console.warn("Track contact failed:", error.response?.data || error.message);
-      return null;
-    }
-  },
-
+ contactRoom: async (propertyId, userId) => {
+  try {
+    return await axiosClient.post(`/properties/${propertyId}/contact`, null, {
+      headers: {
+        "X-User-Id": userId,
+      },
+    });
+  } catch (error) {
+    console.warn("Track contact failed:", error.response?.data || error.message);
+    return null;
+  }
+},
   // 2. CRUD cơ bản
   createRoom: (data) => axiosClient.post('/properties', data),
   deleteRoom: (id) => axiosClient.delete(`/properties/${id}`),

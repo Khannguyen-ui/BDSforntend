@@ -1,20 +1,47 @@
 import axiosClient from "../config/axiosClient";
 
 const reviewService = {
-    // Gọi đến @GetMapping("/room/{roomId}") trong ReviewController
-    getRoomReviews: (roomId) => {
-        return axiosClient.get(`/reviews/room/${roomId}`);
-    },
+  getRoomReviews: (roomId) => {
+    return axiosClient.get(`/reviews/room/${roomId}`);
+  },
 
-    // Gọi đến @PostMapping
-    createReview: (data) => {
-        return axiosClient.post('/reviews', data);
-    },
+  createReview: (data) => {
+    return axiosClient.post("/reviews", data);
+  },
 
-    // Gọi đến @PutMapping("/{id}/reply") cho chủ trọ
-    replyReview: (reviewId, replyContent) => {
-        return axiosClient.put(`/reviews/${reviewId}/reply`, { reply: replyContent });
-    }
+  replyReview: (reviewId, replyContent) => {
+    return axiosClient.put(`/reviews/${reviewId}/reply`, {
+      reply: replyContent,
+    });
+  },
+
+  getOwnerReviews: (ownerId) => {
+    return axiosClient.get(`/owners/reviews/${ownerId}`);
+  },
+
+  getOwnerReviewSummary: (ownerId) => {
+    return axiosClient.get(`/owners/reviews/${ownerId}/summary`);
+  },
+
+  createOwnerReview: (reviewerId, data) => {
+    return axiosClient.post("/owners/reviews", data, {
+      headers: {
+        "X-User-Id": reviewerId,
+      },
+    });
+  },
+
+  replyOwnerReview: (ownerId, reviewId, replyContent) => {
+    return axiosClient.post(
+      `/owners/reviews/${reviewId}/reply`,
+      { reply: replyContent },
+      {
+        headers: {
+          "X-User-Id": ownerId,
+        },
+      }
+    );
+  },
 };
 
 export default reviewService;
