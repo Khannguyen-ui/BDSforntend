@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getImageUrl } from '../../utils/imageHelper';
 import { App } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -114,6 +114,9 @@ const RoomDetail = () => {
     const [reviewLoading, setReviewLoading] = useState(false);
     const [videoRooms, setVideoRooms] = useState([]);
     const [loadingVideoRooms, setLoadingVideoRooms] = useState(false);
+    const [replyingReviewId, setReplyingReviewId] = useState(null);
+    const [replyText, setReplyText] = useState("");
+    const [replyLoading, setReplyLoading] = useState(false);
     // --- STATE CHO BOOKING ---
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -122,11 +125,25 @@ const RoomDetail = () => {
     //dữ liệu biểu đồ
     const [historyChartData, setHistoryChartData] = useState([]);
     const [priceStats, setPriceStats] = useState({ popular: 0, increase: 0, peakPrice: 0 });
+    const pageStartRef = useRef(Date.now());
+    const hasTrackedViewRef = useRef(false);
+    const videoDurationRef = useRef(20);
+    const getWatchTime = () => {
+        return Math.max(1, Math.floor((Date.now() - pageStartRef.current) / 1000));
+    };
 
-    const buildRecommendMetadata = (room, itemType = 'PROPERTY') => ({
+    const getDuration = () => {
+        if (room?.videoUrl) {
+            return Math.max(1, Math.floor(videoDurationRef.current || getWatchTime()));
+        }
+
+        return Math.max(20, getWatchTime());
+    };
+
+    const buildRecommendMetadata = (room, itemType = 'PROPERTY', watchTime = getWatchTime(), duration = getDuration()) => ({
         itemType,
-        duration: 1,
-        watchTime: 0,
+        duration,
+        watchTime,
         price: room?.price || 0,
         userBudget: room?.price || 0,
         province: room?.province || '',
@@ -135,6 +152,22 @@ const RoomDetail = () => {
         locationMatch: room?.district ? 1 : 0,
         categoryMatch: room?.propertyType ? 1 : 0
     });
+    const trackViewWithWatchTime = () => {
+        if (!room?.id || hasTrackedViewRef.current) return;
+
+        const itemType = room?.videoUrl ? 'REEL' : 'PROPERTY';
+        const watchTime = getWatchTime();
+        const duration = getDuration();
+
+        hasTrackedViewRef.current = true;
+
+        recommendService.trackBehavior(
+            room.id,
+            itemType,
+            'VIEW',
+            buildRecommendMetadata(room, itemType, watchTime, duration)
+        ).catch(() => { });
+    };
 
 
     const [nearbyStats, setNearbyStats] = useState({ avgPrice: 0, diffPercentage: 0, totalNearby: 0 });
@@ -152,7 +185,15 @@ const RoomDetail = () => {
     };
     const currentUserId = user?.userId || user?.identityId || user?.id;
     const isOwnRoom = user && room && String(currentUserId) === String(room.ownerId);
+    useEffect(() => {
+        pageStartRef.current = Date.now();
+        hasTrackedViewRef.current = false;
+        videoDurationRef.current = 20;
 
+        return () => {
+            trackViewWithWatchTime();
+        };
+    }, [id, room?.id]);
     const [cheaperRooms, setCheaperRooms] = useState([]);
     const [loadingComparison, setLoadingComparison] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
@@ -357,57 +398,74 @@ const RoomDetail = () => {
 
     // --- XỬ LÝ GỬI REVIEW (CHỈ GIỮ LẠI 1 HÀM NÀY) ---
     const handleSendReview = async (values) => {
-  if (!user) {
-    message.warning("Vui lòng đăng nhập để đánh giá!");
-    navigate("/login");
-    return;
-  }
+        if (!user) {
+            message.warning("Vui lòng đăng nhập để đánh giá!");
+            navigate("/login");
+            return;
+        }
 
-  if (!room?.ownerId) {
-    message.error("Không tìm thấy ownerId của chủ trọ");
-    return;
-  }
+        if (!room?.ownerId) {
+            message.error("Không tìm thấy ownerId của chủ trọ");
+            return;
+        }
 
-  setReviewLoading(true);
+        setReviewLoading(true);
 
-  try {
-    const imageUrls = fileList
-      .filter((file) => file.status === "done")
-      .map((file) => file.response?.url || file.url || file.thumbUrl)
-      .filter(Boolean);
+        try {
+            const imageUrls = fileList
+                .filter(file => file.status === "done")
+                .map(file => {
+                    const url =
+                        file.response?.url ||
+                        file.response?.secure_url ||
+                        file.response?.result ||
+                        file.url ||
+                        file.thumbUrl;
 
-    const payload = {
-      ownerId: Number(room.ownerId),
-      propertyId: Number(id),
-      rating: Number(values.rating),
-      comment: values.comment,
-      images: imageUrls,
+                    return typeof url === "string" ? url : null;
+                })
+                .filter(Boolean);
+
+            const payload = {
+                ownerId: Number(room.ownerId),
+                propertyId: Number(id),
+                rating: Number(values.rating),
+                comment: values.comment,
+                images: imageUrls,
+            };
+            console.log("IMAGE URLS:", imageUrls);
+            console.log("PAYLOAD JSON:", JSON.stringify(payload));
+
+            console.log("SEND OWNER REVIEW:", payload);
+
+            const createRes = await reviewService.createOwnerReview(payload);
+
+            message.success("Cảm ơn bạn đã đánh giá chủ trọ!");
+            reviewForm.resetFields();
+            setFileList([]);
+
+            const res = await reviewService.getOwnerReviews(room.ownerId);
+            const rawReviews =
+                res.data?.result?.content ||
+                res.data?.result ||
+                res.data?.content ||
+                res.data ||
+                [];
+
+            setReviews(Array.isArray(rawReviews) ? rawReviews : []);
+        } catch (error) {
+            console.error("OWNER REVIEW ERROR RAW:", error);
+
+            message.error(
+                error?.response?.data?.message ||
+                error?.response?.data ||
+                error?.message ||
+                "Không thể gửi đánh giá chủ trọ"
+            );
+        } finally {
+            setReviewLoading(false);
+        }
     };
-
-    console.log("SEND OWNER REVIEW:", payload);
-
-    await reviewService.createOwnerReview(currentUserId, payload);
-
-    message.success("Cảm ơn bạn đã đánh giá chủ trọ!");
-    reviewForm.resetFields();
-    setFileList([]);
-
-    const res = await reviewService.getOwnerReviews(room.ownerId);
-    const rawReviews = res.data?.result || res.data;
-    setReviews(Array.isArray(rawReviews) ? rawReviews : []);
-  } catch (error) {
-    console.error("OWNER REVIEW ERROR RAW:", error);
-
-    message.error(
-      error?.response?.data?.message ||
-      error?.response?.data ||
-      error?.message ||
-      "Không thể gửi đánh giá chủ trọ"
-    );
-  } finally {
-    setReviewLoading(false);
-  }
-};
 
 
 
@@ -426,6 +484,7 @@ const RoomDetail = () => {
         setLikeCount(prev => willLike ? prev + 1 : Math.max(0, prev - 1));
         try {
             const res = await favoriteService.toggleLike(id, buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY'));
+
             const responseText = res.data || '';
             const nowLiked = responseText.includes('Like thành công');
             // Đồng bộ lại với phản hồi thật từ server
@@ -475,7 +534,6 @@ const RoomDetail = () => {
                 id,
                 buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY')
             );
-
             const responseText = res.data || '';
             const nowSaved = responseText.includes('lưu tin thành công');
             setIsSaved(nowSaved);
@@ -909,19 +967,6 @@ const RoomDetail = () => {
                     const currentViews = parseInt(localStorage.getItem(vKey) || '0', 10);
                     localStorage.setItem(vKey, String(currentViews + 1));
                 } catch (_) { }
-                roomService.trackView(id);
-
-                if (!user) {
-                    recommendService.trackBehavior(
-                        id,
-                        currentRoomData?.videoUrl ? 'REEL' : 'PROPERTY',
-                        'VIEW',
-                        buildRecommendMetadata(
-                            currentRoomData,
-                            currentRoomData?.videoUrl ? 'REEL' : 'PROPERTY'
-                        )
-                    ).catch(e => console.warn('Track guest view failed:', e));
-                }
                 fetchRecommendations(currentRoomData);
                 //----Ảnh video
                 if (currentRoomData.videoUrl) {
@@ -984,7 +1029,8 @@ const RoomDetail = () => {
             message.info("Đây là bài đăng của bạn.");
             return;
         }
-        roomService.contactRoom(room.id, currentUserId).catch(() => {});
+
+
 
         recommendService.trackBehavior(
             room.id,
@@ -993,12 +1039,12 @@ const RoomDetail = () => {
             buildRecommendMetadata(room, room?.videoUrl ? 'REEL' : 'PROPERTY')
         ).catch(e => console.warn("Recommend CONTACT failed:", e));
         try {
-            message.loading({ content: "Đang kết nối...", key: 'chat_loading' });
+            message.loading({ content: "Đang kết nối...", key: "chat_loading" });
 
-            // 1. Tạo / lấy hội thoại hiện có
+            console.log("START CHAT:", room.ownerId);
+            await roomService.contactRoom(room.id);
             await chatService.startConversation(room.ownerId);
 
-            // 2. Gửi Property Card tự động thay vì text thường
             const cardPayload = JSON.stringify({
                 id: room.id,
                 title: room.title,
@@ -1007,22 +1053,30 @@ const RoomDetail = () => {
                 area: room.area,
                 image: room.images?.[0] || null,
             });
-            await chatService.sendMessage(room.ownerId, cardPayload, 'PROPERTY_CARD');
 
-            message.success({ content: "Đã kết nối!", key: 'chat_loading' });
+            console.log("SEND CHAT:", {
+                receiverId: Number(room.ownerId),
+                content: cardPayload,
+                type: "PROPERTY_CARD",
+            });
 
-            // 3. Chuyển sang trang tin nhắn, truyền ownerId để tự động mở đúng hội thoại
-            navigate('/messages', { state: { openPartnerId: room.ownerId } });
+            await chatService.sendMessage({
+                receiverId: Number(room.ownerId),
+                content: cardPayload,
+                type: "PROPERTY_CARD",
+            });
 
+            message.success({ content: "Đã kết nối!", key: "chat_loading" });
+            navigate("/messages", { state: { openPartnerId: room.ownerId } });
         } catch (error) {
-            console.error(error);
-            message.error({ content: "Lỗi kết nối server chat.", key: 'chat_loading' });
+            console.error("CHAT ERROR:", error.response?.status, error.response?.data, error);
+            message.error({ content: "Lỗi kết nối server chat.", key: "chat_loading" });
         }
     };
 
     const handleZalo = () => {
         if (room?.id) {
-            roomService.contactRoom(room.id, currentUserId).catch(() => {});
+            roomService.contactRoom(room.id, currentUserId).catch(() => { });
 
             recommendService.trackBehavior(
                 room.id,
@@ -1040,7 +1094,32 @@ const RoomDetail = () => {
         }
     };
 
+    const handleReplyReview = async (reviewId) => {
+        if (!replyText.trim()) {
+            message.warning("Vui lòng nhập phản hồi");
+            return;
+        }
 
+        setReplyLoading(true);
+        try {
+            const res = await reviewService.replyOwnerReview(reviewId, replyText);
+
+            const updatedReview = res.data?.result || res.data;
+
+            setReviews(prev =>
+                prev.map(r => r.id === reviewId ? updatedReview : r)
+            );
+
+            setReplyingReviewId(null);
+            setReplyText("");
+            message.success("Đã phản hồi đánh giá");
+        } catch (error) {
+            console.error("REPLY REVIEW ERROR:", error);
+            message.error(error?.response?.data?.message || "Không thể phản hồi");
+        } finally {
+            setReplyLoading(false);
+        }
+    };
 
 
     if (loading) return <div className="flex flex-col h-screen justify-center items-center gap-2"><Spin size="large" /><div className="text-gray-500">Đang tải thông tin...</div></div>;
@@ -1076,10 +1155,13 @@ const RoomDetail = () => {
                         <div className="bg-black rounded-xl overflow-hidden relative mb-2 h-[450px] flex items-center justify-center group shadow-lg border border-gray-200">
                             {activeMedia.type === 'video' ? (
                                 <video
-                                    key={activeMedia.url} // Buộc browser tải lại source khi đổi video
+                                    key={activeMedia.url}
                                     controls
                                     autoPlay
                                     className="w-full h-full object-contain bg-black"
+                                    onLoadedMetadata={(e) => {
+                                        videoDurationRef.current = Math.max(1, Math.floor(e.currentTarget.duration || 20));
+                                    }}
                                 >
                                     <source src={activeMedia.url} type="video/mp4" />
                                     Trình duyệt của bạn không hỗ trợ xem video.
@@ -1840,10 +1922,10 @@ const RoomDetail = () => {
                                                     {/* 3. Rating: Sao màu cam Shopee */}
                                                     <Rate
                                                         disabled
-                                                        defaultValue={rev.rating}
+                                                        value={Number(rev.rating) || 0}
                                                         className="text-[10px] text-[#ee4d2d] block mb-2"
                                                     />
-
+                                                    {console.log("REVIEW RATING:", rev.rating, rev)}
                                                     {/* 4. Nội dung bình luận */}
                                                     <div className="text-[14px] text-gray-800 leading-relaxed break-words whitespace-pre-line">
                                                         {rev.comment}
@@ -1868,23 +1950,70 @@ const RoomDetail = () => {
                                                     )}
 
                                                     {/* 6. Phản hồi của chủ trọ: Hiển thị nếu rev.landlordReply có dữ liệu */}
-                                                    {rev.landlordReply && (
+                                                    {/* Phản hồi của chủ nhà */}
+                                                    {rev.ownerReply && (
                                                         <div className="mt-4 bg-[#f9f9f9] p-3 rounded-lg border-l-2 border-orange-500">
                                                             <div className="text-[12px] font-bold text-gray-800 mb-1 flex items-center gap-2">
                                                                 <MessageOutlined className="text-orange-500 text-xs" />
-                                                                Phản hồi của Chủ trọ
+                                                                Phản hồi của chủ nhà
                                                             </div>
-                                                            <div className="text-[13px] text-gray-600 italic">
-                                                                "{rev.landlordReply}"
+
+                                                            <div className="text-[13px] text-gray-600">
+                                                                {rev.ownerReply}
                                                             </div>
-                                                            {rev.repliedAt && (
+
+                                                            {rev.ownerReplyAt && (
                                                                 <div className="text-[10px] text-gray-400 mt-2">
-                                                                    {dayjs(rev.repliedAt).fromNow()}
+                                                                    {dayjs(rev.ownerReplyAt).fromNow()}
                                                                 </div>
                                                             )}
                                                         </div>
                                                     )}
 
+                                                    {/* Chỉ chủ bài đăng mới được phản hồi */}
+                                                    {isOwnRoom && !rev.ownerReply && (
+                                                        <div className="mt-3">
+                                                            {replyingReviewId === rev.id ? (
+                                                                <>
+                                                                    <Input.TextArea
+                                                                        rows={2}
+                                                                        value={replyText}
+                                                                        onChange={(e) => setReplyText(e.target.value)}
+                                                                        placeholder="Nhập phản hồi..."
+                                                                    />
+
+                                                                    <div className="flex gap-2 mt-2">
+                                                                        <Button
+                                                                            type="primary"
+                                                                            size="small"
+                                                                            loading={replyLoading}
+                                                                            onClick={() => handleReplyReview(rev.id)}
+                                                                        >
+                                                                            Gửi
+                                                                        </Button>
+
+                                                                        <Button
+                                                                            size="small"
+                                                                            onClick={() => {
+                                                                                setReplyingReviewId(null);
+                                                                                setReplyText("");
+                                                                            }}
+                                                                        >
+                                                                            Hủy
+                                                                        </Button>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <Button
+                                                                    type="link"
+                                                                    size="small"
+                                                                    onClick={() => setReplyingReviewId(rev.id)}
+                                                                >
+                                                                    Phản hồi
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {/* 7. Thời gian đánh giá */}
                                                     <div className="text-[11px] text-gray-400 mt-3 font-light">
                                                         {dayjs(rev.createdAt).format('DD-MM-YYYY HH:mm')}

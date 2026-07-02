@@ -12,11 +12,19 @@ const chatService = {
   },
 
   // 3. Gửi tin nhắn
-  sendMessage: (receiverId, content, type = "TEXT") => {
+  sendMessage: ({
+    receiverId,
+    content = "",
+    type = "TEXT",
+    mediaUrl = null,
+    replyToMessageId = null,
+  }) => {
     return axiosClient.post("/api/chat/send", {
-      receiverId: receiverId,
-      content: content,
-      type: type 
+      receiverId,
+      content,
+      type,
+      mediaUrl,
+      replyToMessageId,
     });
   },
 

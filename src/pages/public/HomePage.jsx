@@ -1057,7 +1057,7 @@ const HomePage = () => {
                             interactionService
                               .trackClick(room.id, room.primarySource || "TRENDING")
                               .catch(() => { });
-
+                            
                             navigate(`/rooms/${room.id}`);
                           }}
                         >
@@ -1207,5 +1207,5 @@ const HomePage = () => {
     </ConfigProvider>
   );
 };
-<Footer />
+
 export default HomePage;

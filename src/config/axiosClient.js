@@ -8,19 +8,6 @@ const axiosClient = axios.create({
 });
 
 const getCurrentToken = () => {
-  const adminSessionId = sessionStorage.getItem('adminSessionId');
-
-  if (adminSessionId) {
-    const adminToken = sessionStorage.getItem(`${adminSessionId}_accessToken`);
-    if (adminToken) {
-      return {
-        token: adminToken,
-        sessionId: adminSessionId,
-        sessionType: 'admin',
-      };
-    }
-  }
-
   const userSessionId = sessionStorage.getItem('userSessionId');
 
   if (userSessionId) {
@@ -30,6 +17,19 @@ const getCurrentToken = () => {
         token: userToken,
         sessionId: userSessionId,
         sessionType: 'user',
+      };
+    }
+  }
+
+  const adminSessionId = sessionStorage.getItem('adminSessionId');
+
+  if (adminSessionId) {
+    const adminToken = sessionStorage.getItem(`${adminSessionId}_accessToken`);
+    if (adminToken) {
+      return {
+        token: adminToken,
+        sessionId: adminSessionId,
+        sessionType: 'admin',
       };
     }
   }

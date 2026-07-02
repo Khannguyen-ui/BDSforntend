@@ -54,6 +54,7 @@ import MasterData from '../pages/admin/MasterData';
 import UserManagement from '../pages/admin/UserManagement';
 import ServicePackages from '../pages/admin/ServicePackages';
 import SourceAnalytics from '../pages/admin/SourceAnalytics';
+import ReelsPage from '../pages/common/ReelsPage';
 
 const AppRoutes = () => {
     return (
@@ -81,6 +82,8 @@ const AppRoutes = () => {
                 <Route path="/rooms/:id" element={<RoomDetail />} />
                 <Route path="/analytics" element={<MarketAnalytics />} />
                 <Route path="/projects/:id" element={<ProjectDetail />} />
+                <Route path="/reels" element={<ReelsPage />} />
+                <Route path="/reels/:id" element={<ReelsPage />} />
             </Route>
 
             {/* ========================================================= */}

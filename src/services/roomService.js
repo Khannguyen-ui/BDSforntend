@@ -54,13 +54,9 @@ const roomService = {
     }
   },
 
- contactRoom: async (propertyId, userId) => {
+contactRoom: async (propertyId) => {
   try {
-    return await axiosClient.post(`/properties/${propertyId}/contact`, null, {
-      headers: {
-        "X-User-Id": userId,
-      },
-    });
+    return await axiosClient.post(`/properties/${propertyId}/contact`);
   } catch (error) {
     console.warn("Track contact failed:", error.response?.data || error.message);
     return null;

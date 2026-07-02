@@ -285,7 +285,11 @@ const ChatPage = () => {
       setMessages(prev => [...prev, optimisticMsg]);
 
       // Gửi qua HTTP REST để Backend lưu DB + broadcast WebSocket
-      await chatService.sendMessage(targetId, imageUrl, 'IMAGE');
+      await chatService.sendMessage({
+        receiverId: targetId,
+        content: imageUrl,
+        type: 'IMAGE',
+      });
       message.success({ content: 'Đã gửi ảnh', key: 'upload_chat' });
     } catch (error) { message.error({ content: 'Lỗi gửi ảnh', key: 'upload_chat' }); }
   };
@@ -303,7 +307,11 @@ const ChatPage = () => {
 
     try {
       // Gửi qua HTTP REST để Backend lưu DB + broadcast WebSocket cho bên kia
-      await chatService.sendMessage(targetId, textToSend, 'TEXT');
+      await chatService.sendMessage({
+        receiverId: targetId,
+        content: textToSend,
+        type: 'TEXT',
+      });
     } catch (error) {
       console.error('Gửi tin nhắn thất bại:', error);
       message.error('Không thể gửi tin nhắn. Vui lòng thử lại!');

@@ -5,8 +5,8 @@ const reviewService = {
     return axiosClient.get(`/reviews/room/${roomId}`);
   },
 
-  createReview: (data) => {
-    return axiosClient.post("/reviews", data);
+  createOwnerReview: (data) => {
+    return axiosClient.post("/owners/reviews", data);
   },
 
   replyReview: (reviewId, replyContent) => {
@@ -23,24 +23,10 @@ const reviewService = {
     return axiosClient.get(`/owners/reviews/${ownerId}/summary`);
   },
 
-  createOwnerReview: (reviewerId, data) => {
-    return axiosClient.post("/owners/reviews", data, {
-      headers: {
-        "X-User-Id": reviewerId,
-      },
+  replyOwnerReview: (reviewId, replyContent) => {
+    return axiosClient.post(`/owners/reviews/${reviewId}/reply`, {
+      reply: replyContent,
     });
-  },
-
-  replyOwnerReview: (ownerId, reviewId, replyContent) => {
-    return axiosClient.post(
-      `/owners/reviews/${reviewId}/reply`,
-      { reply: replyContent },
-      {
-        headers: {
-          "X-User-Id": ownerId,
-        },
-      }
-    );
   },
 };
 

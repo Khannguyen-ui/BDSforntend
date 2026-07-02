@@ -15,6 +15,7 @@ import useAuth from '../../hooks/useAuth';
 import userService from '../../services/userService';
 import notificationService from '../../services/notificationService';
 import { useNotification } from '../../contexts/NotificationContext';
+
 import ReelsViewer from '../modals/ReelsViewer';
 import Footer from './Footer';
 import systemLogo from '../../assets/logo2.png';
@@ -23,7 +24,6 @@ const PublicLayout = () => {
   const navigate = useNavigate();
 
   // State quản lý Reels từ Header
-  const [isReelsOpen, setIsReelsOpen] = useState(false);
 
   // --- 1. STATE ĐẾM THÔNG BÁO ---
   const { unreadCount } = useNotification();
@@ -231,7 +231,7 @@ const PublicLayout = () => {
             <Tooltip title="Lướt Video (Reels)">
               <div
                 className="cursor-pointer flex items-center justify-center bg-gray-100 hover:bg-orange-100 w-8 h-8 md:w-9 md:h-9 rounded-full transition-colors"
-                onClick={() => setIsReelsOpen(true)}
+                onClick={() => navigate("/reels")}
               >
                 <PlayCircleFilled className="text-lg md:text-xl text-[#f96302]" />
               </div>
@@ -308,10 +308,6 @@ const PublicLayout = () => {
       <Footer />
 
       {/* REELS VIEWER TỪ TRANG CHỦ */}
-      <ReelsViewer
-        isOpen={isReelsOpen}
-        onClose={() => setIsReelsOpen(false)}
-      />
     </div>
   );
 };
