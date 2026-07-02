@@ -1,181 +1,203 @@
-import React from 'react';
-import { Row, Col, Typography, Button, Divider, Space } from 'antd';
+import React from "react";
+import { Row, Col, Typography, Button, Divider, Space } from "antd";
 import {
-    EnvironmentOutlined,
-    PhoneOutlined,
-    GlobalOutlined,
-    FacebookFilled,
-    YoutubeFilled,
-    QuestionCircleOutlined,
-    MailOutlined,
-    HomeFilled // Dùng tạm làm logo
-} from '@ant-design/icons';
-import myQrCode from '../../assets/Qrpro.jpg';
-import systemLogo from '../../assets/logo2.png';
+  EnvironmentOutlined,
+  PhoneOutlined,
+  GlobalOutlined,
+  FacebookFilled,
+  YoutubeFilled,
+  QuestionCircleOutlined,
+  MailOutlined,
+  HomeOutlined,
+} from "@ant-design/icons";
 
-const { Title, Text, Link } = Typography;
+import myQrCode from "../../assets/Qrpro.jpg";
+import systemLogo from "../../assets/logo2.png";
+
+const { Text } = Typography;
 
 const Footer = () => {
-    return (
-        <footer className="bg-[#F4F4F4] pt-12 pb-6 border-t border-gray-200 mt-auto text-[#2C2C2C]">
-            <div className="container mx-auto px-4 max-w-screen-xl">
+  const linkClass =
+    "text-gray-500 hover:text-[#E03C31] transition-colors text-sm";
 
-                {/* --- PHẦN 1: THÔNG TIN CÔNG TY & LIÊN KẾT --- */}
-                <Row gutter={[48, 32]}>
-
-                    {/* CỘT 1: THÔNG TIN CÔNG TY */}
-                    <Col xs={24} lg={11}>
-                        {/* Logo Fake */}
-                        <div className="mb-5 flex items-center gap-3">
+  return (
+    <footer className="mt-auto bg-gradient-to-br from-[#FAFBFD] via-white to-[#FFF5F4] border-t border-gray-100">
+      <div className="container mx-auto px-4 max-w-screen-xl py-12">
+        <div className="rounded-[32px] bg-white/90 backdrop-blur border border-gray-100 shadow-[0_18px_60px_rgba(15,23,42,0.06)] p-6 md:p-8">
+          <Row gutter={[48, 36]}>
+            <Col xs={24} lg={10}>
+             <div className="mb-5 flex items-center gap-3">
                             <img
                                 src={systemLogo}
                                 alt="Homeverse Logo"
                                 className="h-12 w-auto object-contain" 
                             />
                             <div>
-                                <span className="block font-bold text-[#E03C31] text-2xl leading-none">homeverse-bds.duckdns.org</span>
-                                <span className="text-[10px] text-gray-500 font-semibold tracking-wider block mt-1">by ProJSGuru</span>
-                            </div>
-                        </div>
+                  <div className="font-extrabold text-2xl leading-none text-gray-900">
+                    Home<span className="text-[#E03C31]">Verse</span>
+                  </div>
+                  <div className="text-[11px] text-gray-400 font-semibold tracking-wider mt-1">
+                    Smart Real Estate Platform
+                  </div>
+                </div>
+              </div>
 
-                        <h5 className="font-bold text-sm uppercase mb-3 text-gray-800">CÔNG TY CỔ PHẦN HVS VIỆT NAM</h5>
+              <h5 className="font-bold text-sm uppercase mb-3 text-gray-800">
+                CÔNG TY CỔ PHẦN HVS VIỆT NAM
+              </h5>
 
-                        <div className="space-y-3 text-sm text-gray-700">
-                            <div className="flex items-start gap-3">
-                                <EnvironmentOutlined className="mt-1 text-lg" />
-                                <span>Tầng 3, Nopd HCM Central, Sai Gon, Ho Chi Minh</span>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <PhoneOutlined className="mt-1 text-lg" />
-                                <span>(024) 3562 5239 - (024) 3562 0539</span>
-                            </div>
-                        </div>
-
-                        {/* Phần tải ứng dụng (QR & Store Badges) */}
-                        <div className="mt-6 flex gap-4 items-center">
-                            {/* QR Code Placeholder */}
-                            <div className="bg-white p-1 rounded-md shadow-sm">
-                                {/* 2. THAY ĐỔI BIẾN myQrCode VÀO ĐÂY */}
-                                <img
-                                    src={myQrCode}
-                                    alt="QR Code"
-                                    className="w-[80px] h-[80px] object-contain"
-                                />
-                            </div>
-
-                            <div className="flex flex-col justify-between h-[80px]">
-                                <span className="text-sm text-gray-700 font-medium">
-                                    Trải nghiệm homeverse-bds.duckdns.org trên ứng dụng
-                                </span>
-                                <div className="flex flex-col gap-2 mt-auto">
-                                    {/* Google Play Badge */}
-                                    <img
-                                        src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                                        alt="Google Play"
-                                        className="h-[30px] w-auto cursor-pointer"
-                                    />
-                                    {/* App Store Badge */}
-                                    <img
-                                        src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
-                                        alt="App Store"
-                                        className="h-[30px] w-auto cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </Col>
-
-                    {/* CỘT 2: HƯỚNG DẪN */}
-                    <Col xs={12} sm={12} lg={6} className="lg:pl-10">
-                        <h5 className="font-bold text-sm mb-4 text-gray-800">Hướng dẫn</h5>
-                        <div className="flex flex-col gap-3 text-sm">
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Về chúng tôi</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Báo giá & hỗ trợ</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Câu hỏi thường gặp</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Góp ý báo lỗi</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Sitemap</a>
-                        </div>
-                    </Col>
-
-                    {/* CỘT 3: QUY ĐỊNH */}
-                    <Col xs={12} sm={12} lg={7}>
-                        <h5 className="font-bold text-sm mb-4 text-gray-800">Quy định</h5>
-                        <div className="flex flex-col gap-3 text-sm">
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Quy định đăng tin</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Quy chế hoạt động</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Điều khoản thỏa thuận</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Chính sách bảo mật</a>
-                            <a href="#" className="text-gray-600 hover:text-[#E03C31] hover:underline transition-colors">Giải quyết khiếu nại</a>
-                        </div>
-                    </Col>
-                </Row>
-
-                {/* --- PHẦN 2: BUTTONS LIÊN HỆ --- */}
-                <div className="mt-10 flex flex-wrap gap-4 items-center">
-                    {/* Nút Hotline Đỏ */}
-                    <Button
-                        type="primary"
-                        danger
-                        shape="round"
-                        size="large"
-                        icon={<PhoneOutlined rotate={90} />}
-                        className="font-bold h-10 px-6 bg-[#D0021B] border-[#D0021B] hover:bg-[#b00217]"
-                    >
-                        1900 1865
-                    </Button>
-
-                    {/* Nút Hỗ trợ Trắng */}
-                    <Button
-                        shape="round"
-                        size="large"
-                        icon={<QuestionCircleOutlined />}
-                        className="h-10 px-6 border-gray-400 text-gray-700 hover:text-[#D0021B] hover:border-[#D0021B]"
-                    >
-                        trogiup.homeverse-bds.duckdns.org
-                    </Button>
-
-                    {/* Nút Email Trắng */}
-                    <Button
-                        shape="round"
-                        size="large"
-                        icon={<MailOutlined />}
-                        className="h-10 px-6 border-gray-400 text-gray-700 hover:text-[#D0021B] hover:border-[#D0021B]"
-                    >
-                        hotro@homeverse-bds.duckdns.org
-                    </Button>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start gap-3">
+                  <EnvironmentOutlined className="mt-1 text-lg text-[#E03C31]" />
+                  <span>
+                    Tầng 3, Nopd HCM Central, Sài Gòn, Thành phố Hồ Chí Minh
+                  </span>
                 </div>
 
-                {/* --- DIVIDER --- */}
-                <Divider className="border-gray-300 my-6" />
-
-                {/* --- PHẦN 3: COPYRIGHT & SOCIAL & LANG --- */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-                    <Text className="text-gray-500">
-                        Copyright © 2007 - 2026 homeverse-bds.duckdns.org
-                    </Text>
-
-                    <div className="flex items-center gap-6">
-                        {/* Nút chọn ngôn ngữ/quốc gia */}
-                        <div className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-full bg-white cursor-pointer hover:bg-gray-50 transition">
-                            <GlobalOutlined className="text-lg text-gray-600" />
-                            <span className="font-medium text-gray-700">Việt Nam</span>
-                            <span className="text-[10px] ml-1">▼</span>
-                        </div>
-
-                        {/* Social Icons */}
-                        <Space size="middle">
-                            <FacebookFilled className="text-3xl text-[#1877F2] cursor-pointer hover:opacity-80 transition" />
-                            <YoutubeFilled className="text-3xl text-[#FF0000] cursor-pointer hover:opacity-80 transition" />
-                            {/* Fake Zalo Icon */}
-                            <div className="bg-[#0068FF] text-white font-bold text-[10px] w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:opacity-80 transition">
-                                Zalo
-                            </div>
-                        </Space>
-                    </div>
+                <div className="flex items-start gap-3">
+                  <PhoneOutlined className="mt-1 text-lg text-[#E03C31]" />
+                  <span>(024) 3562 5239 - (024) 3562 0539</span>
                 </div>
+              </div>
+
+              <div className="mt-6 flex gap-4 items-center rounded-3xl bg-[#FAFBFD] border border-gray-100 p-3 max-w-[420px]">
+                <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                  <img
+                    src={myQrCode}
+                    alt="QR Code"
+                    className="w-[82px] h-[82px] object-contain"
+                  />
+                </div>
+
+                <div className="flex-1">
+                  <span className="text-sm text-gray-700 font-semibold block mb-3">
+                    Trải nghiệm HomeVerse trên ứng dụng
+                  </span>
+
+                  <div className="flex flex-wrap gap-2">
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                      alt="Google Play"
+                      className="h-[32px] w-auto cursor-pointer hover:opacity-80 transition"
+                    />
+
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
+                      alt="App Store"
+                      className="h-[32px] w-auto cursor-pointer hover:opacity-80 transition"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Col>
+
+            <Col xs={12} sm={12} lg={7}>
+              <h5 className="font-bold text-sm uppercase mb-4 text-gray-900">
+                Hướng dẫn
+              </h5>
+
+              <div className="flex flex-col gap-3">
+                <a href="#" className={linkClass}>
+                  Về chúng tôi
+                </a>
+                <a href="#" className={linkClass}>
+                  Báo giá & hỗ trợ
+                </a>
+                <a href="#" className={linkClass}>
+                  Câu hỏi thường gặp
+                </a>
+                <a href="#" className={linkClass}>
+                  Góp ý báo lỗi
+                </a>
+                <a href="#" className={linkClass}>
+                  Sitemap
+                </a>
+              </div>
+            </Col>
+
+            <Col xs={12} sm={12} lg={7}>
+              <h5 className="font-bold text-sm uppercase mb-4 text-gray-900">
+                Quy định
+              </h5>
+
+              <div className="flex flex-col gap-3">
+                <a href="#" className={linkClass}>
+                  Quy định đăng tin
+                </a>
+                <a href="#" className={linkClass}>
+                  Quy chế hoạt động
+                </a>
+                <a href="#" className={linkClass}>
+                  Điều khoản thỏa thuận
+                </a>
+                <a href="#" className={linkClass}>
+                  Chính sách bảo mật
+                </a>
+                <a href="#" className={linkClass}>
+                  Giải quyết khiếu nại
+                </a>
+              </div>
+            </Col>
+          </Row>
+
+          <div className="mt-10 flex flex-wrap gap-3 items-center">
+            <Button
+              type="primary"
+              shape="round"
+              size="large"
+              icon={<PhoneOutlined rotate={90} />}
+              className="font-bold h-11 px-6 bg-[#E03C31] border-[#E03C31] shadow-md hover:!bg-[#c92f25] hover:!border-[#c92f25]"
+            >
+              1900 1865
+            </Button>
+
+            <Button
+              shape="round"
+              size="large"
+              icon={<QuestionCircleOutlined />}
+              className="h-11 px-6 border-gray-200 bg-white text-gray-700 hover:!text-[#E03C31] hover:!border-[#E03C31]"
+            >
+              trogiup.homeverse-bds.duckdns.org
+            </Button>
+
+            <Button
+              shape="round"
+              size="large"
+              icon={<MailOutlined />}
+              className="h-11 px-6 border-gray-200 bg-white text-gray-700 hover:!text-[#E03C31] hover:!border-[#E03C31]"
+            >
+              hotro@homeverse-bds.duckdns.org
+            </Button>
+          </div>
+
+          <Divider className="border-gray-100 my-7" />
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            <Text className="text-gray-400">
+              Copyright © 2007 - 2026 HomeVerse. All rights reserved.
+            </Text>
+
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-2 border border-gray-100 px-4 py-2 rounded-full bg-[#FAFBFD] cursor-pointer hover:bg-white hover:shadow-sm transition">
+                <GlobalOutlined className="text-lg text-gray-500" />
+                <span className="font-medium text-gray-700">Việt Nam</span>
+                <span className="text-[10px] text-gray-400">▼</span>
+              </div>
+
+              <Space size="middle">
+                <FacebookFilled className="text-3xl text-[#1877F2] cursor-pointer hover:scale-110 transition-transform" />
+                <YoutubeFilled className="text-3xl text-[#FF0000] cursor-pointer hover:scale-110 transition-transform" />
+
+                <div className="bg-[#0068FF] text-white font-bold text-[10px] w-8 h-8 flex items-center justify-center rounded-full cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                  Zalo
+                </div>
+              </Space>
             </div>
-        </footer>
-    );
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
 };
 
 export default Footer;

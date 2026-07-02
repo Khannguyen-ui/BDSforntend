@@ -1,17 +1,11 @@
 import axiosClient from "../config/axiosClient";
 
 const chatService = {
-  // 1. Lấy danh sách những người đã từng chat (Sidebar trái)
-  getConversations: () => {
-    return axiosClient.get("/api/chat/conversations");
-  },
+  getConversations: () => axiosClient.get("/api/chat/conversations"),
 
-  // 2. Lấy lịch sử tin nhắn với một người (Main Chat)
-  getChatHistory: (partnerId) => {
-    return axiosClient.get(`/api/chat/history/${partnerId}`);
-  },
+  getChatHistory: (partnerId) =>
+    axiosClient.get(`/api/chat/history/${partnerId}`),
 
-  // 3. Gửi tin nhắn
   sendMessage: ({
     receiverId,
     content = "",
@@ -28,15 +22,37 @@ const chatService = {
     });
   },
 
-  // 4. Bắt đầu cuộc trò chuyện mới
-  startConversation: (partnerId) => {
-    return axiosClient.post("/api/chat/start", { partnerId });
-  },
+  startConversation: (partnerId) =>
+    axiosClient.post("/api/chat/start", { partnerId }),
 
-  // 5. Đánh dấu đã đọc
-  markAsRead: (partnerId) => {
-    return axiosClient.put(`/api/chat/read/${partnerId}`);
-  }
+  markAsRead: (partnerId) =>
+    axiosClient.put(`/api/chat/read/${partnerId}`),
+
+  recallMessage: (messageId) =>
+    axiosClient.put(`/api/chat/recall/${messageId}`),
+
+  reactMessage: (messageId, emoji) =>
+    axiosClient.post("/api/chat/reaction", {
+      messageId,
+      emoji,
+    }),
+
+  markOnline: (userId) =>
+    axiosClient.post(
+      "/api/chat/presence/online",
+      {},
+      { headers: { "X-User-Id": userId } }
+    ),
+
+  markOffline: (userId) =>
+    axiosClient.post(
+      "/api/chat/presence/offline",
+      {},
+      { headers: { "X-User-Id": userId } }
+    ),
+
+  getPresence: (userId) =>
+    axiosClient.get(`/api/chat/presence/${userId}`),
 };
 
 export default chatService;
