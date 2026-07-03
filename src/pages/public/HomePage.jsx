@@ -1053,11 +1053,18 @@ const HomePage = () => {
                               )}
                             </div>
                           }
-                          onClick={() => {
-                            interactionService
-                              .trackClick(room.id, room.primarySource || "TRENDING")
-                              .catch(() => { });
-                            
+                          onClick={async () => {
+                            try {
+                              await roomService.trackClick(room.id, {
+                                itemType: "PROPERTY",
+                                district: room.district,
+                                price: room.price,
+                                userBudget: room.price,
+                                categoryMatch: room.propertyType ? 1 : 0,
+                                locationMatch: room.district ? 1 : 0,
+                              });
+                            } catch (e) { }
+
                             navigate(`/rooms/${room.id}`);
                           }}
                         >

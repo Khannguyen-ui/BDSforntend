@@ -197,8 +197,9 @@ const SourceAnalytics = () => {
       ),
     },
     {
-      title: "Hiệu suất CTR",
+      title: "Hiệu suất",
       key: "progress",
+      width: 150,
       render: (_, record) => {
         const ctr = Number(record.ctr || 0);
 
@@ -208,11 +209,11 @@ const SourceAnalytics = () => {
             size="small"
             strokeColor={ctr >= 10 ? "#22C55E" : ctr >= 3 ? "#2563EB" : "#F59E0B"}
             trailColor="#E2E8F0"
-            format={() => `${ctr.toFixed(2)}%`}
+            format={() => ""}
           />
         );
       },
-    },
+    }
   ];
 
   return (
@@ -412,7 +413,7 @@ const SourceAnalytics = () => {
             dataSource={sources}
             loading={loading}
             pagination={false}
-            scroll={{ x: 900 }}
+            scroll={{ x: 760 }}
           />
         )}
       </Card>

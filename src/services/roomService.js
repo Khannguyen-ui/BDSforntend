@@ -54,14 +54,14 @@ const roomService = {
     }
   },
 
-contactRoom: async (propertyId) => {
-  try {
-    return await axiosClient.post(`/properties/${propertyId}/contact`);
-  } catch (error) {
-    console.warn("Track contact failed:", error.response?.data || error.message);
-    return null;
-  }
-},
+  contactRoom: async (propertyId) => {
+    try {
+      return await axiosClient.post(`/properties/${propertyId}/contact`);
+    } catch (error) {
+      console.warn("Track contact failed:", error.response?.data || error.message);
+      return null;
+    }
+  },
   // 2. CRUD cơ bản
   createRoom: (data) => axiosClient.post('/properties', data),
   deleteRoom: (id) => axiosClient.delete(`/properties/${id}`),
@@ -197,36 +197,36 @@ contactRoom: async (propertyId) => {
       try {
         const publicRes = await axiosClient.get('/public/properties', { params: { size: 500, status: 'ACTIVE' } });
         const publicData = publicRes.data?.result?.content || publicRes.data?.data?.content || publicRes.data?.content || (Array.isArray(publicRes.data?.result) ? publicRes.data.result : []);
-        
+
         if (Array.isArray(publicData)) {
           const vipMap = {};
           publicData.forEach(p => {
             if (p.isPromoted || p.priorityLevel > 0 || p.promotionPackageId) {
-               vipMap[p.id] = {
-                 priorityLevel: p.priorityLevel,
-                 isPromoted: p.isPromoted,
-                 promotionPackageId: p.promotionPackageId,
-                 promotionPackageName: p.promotionPackageName,
-                 lastPushedAt: p.lastPushedAt,
-                 promotionExpiresAt: p.promotionExpiresAt
-               };
+              vipMap[p.id] = {
+                priorityLevel: p.priorityLevel,
+                isPromoted: p.isPromoted,
+                promotionPackageId: p.promotionPackageId,
+                promotionPackageName: p.promotionPackageName,
+                lastPushedAt: p.lastPushedAt,
+                promotionExpiresAt: p.promotionExpiresAt
+              };
             }
           });
 
           content = content.map(item => {
             if (vipMap[item.id]) {
-               return { ...item, ...vipMap[item.id] };
+              return { ...item, ...vipMap[item.id] };
             }
             return item;
           });
 
           if (!Array.isArray(resultData)) {
-             resultData.content = content;
+            resultData.content = content;
           } else {
-             resultData = content;
+            resultData = content;
           }
         }
-      } catch(mergeErr) {
+      } catch (mergeErr) {
         console.warn("Could not merge VIP data:", mergeErr.message);
       }
 
@@ -257,7 +257,7 @@ contactRoom: async (propertyId) => {
             const R = 6371; // Bán kính trái đất (km)
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = 0.5 - Math.cos(dLat)/2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * (1 - Math.cos(dLon))/2;
+            const a = 0.5 - Math.cos(dLat) / 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * (1 - Math.cos(dLon)) / 2;
             return R * 2 * Math.asin(Math.sqrt(a));
           };
 
@@ -341,7 +341,7 @@ contactRoom: async (propertyId) => {
   purchasePackage: (packageId) => axiosClient.post('/transactions/purchase-package', packageId),
 
 
- 
+
 
   updateRoomStatus: (roomId, status) => {
     return axiosClient.put(`/properties/${roomId}/status`, null, { params: { status } });
@@ -363,6 +363,13 @@ contactRoom: async (propertyId) => {
     return axiosClient.get(`/public/properties/by-project/${projectId}`, {
       params: { page, size }
     });
+  },
+  trackClick: (propertyId, data = {}) => {
+    return axiosClient.post(`/properties/${propertyId}/click`, data);
+  },
+
+  shareProperty: (propertyId, data = {}) => {
+    return axiosClient.post(`/properties/${propertyId}/share`, data);
   },
 
 };
