@@ -865,7 +865,7 @@ const ReelsPage = () => {
 
                 <div className="hidden sm:block text-white">
                     <div className="font-extrabold text-lg">HomeVerse Shorts</div>
-                    <div className="text-xs text-white/50">AI Reels bất động sản</div>
+                    <div className="text-xs text-white/50">Reels bất động sản</div>
                 </div>
             </div>
 
