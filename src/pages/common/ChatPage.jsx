@@ -588,7 +588,7 @@ const ChatPage = () => {
       return (
         <div
           key={msg.id || msg.tempId || index}
-          className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+          className={`flex w-full min-w-0 ${isMe ? "justify-end" : "justify-start"}`}
         >
           {!isMe && (
             <Avatar
@@ -601,7 +601,7 @@ const ChatPage = () => {
 
           <div
             onClick={() => card?.id && navigate(`/rooms/${card.id}`)}
-            className="max-w-[310px] rounded-3xl overflow-hidden bg-white shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-[1px] transition-all"
+            className="w-fit max-w-[min(310px,78%)] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-[1px] transition-all"
           >
             {card?.image ? (
               <img
@@ -642,7 +642,7 @@ const ChatPage = () => {
     return (
       <div
         key={msg.id || msg.tempId || index}
-        className={`flex group ${isMe ? "justify-end" : "justify-start"}`}
+        className={`flex group w-full min-w-0 ${isMe ? "justify-end" : "justify-start"}`}
       >
         {!isMe && (
           <Avatar
@@ -653,10 +653,10 @@ const ChatPage = () => {
           />
         )}
 
-        <div className="relative max-w-[68%]">
+        <div className="relative min-w-0 max-w-[68%]">
           <Dropdown menu={{ items: actionItems }} trigger={["click"]}>
             <div
-              className={`px-4 py-2.5 rounded-3xl text-sm shadow-sm relative whitespace-pre-wrap cursor-pointer transition-all hover:shadow-md ${
+              className={`max-w-full overflow-hidden px-4 py-2.5 rounded-3xl text-sm shadow-sm relative whitespace-pre-wrap break-words cursor-pointer transition-all hover:shadow-md ${
                 isMe
                   ? "bg-gradient-to-br from-[#E03C31] to-[#ff6b5f] text-white rounded-br-lg"
                   : "bg-white text-gray-800 rounded-bl-lg border border-gray-100"
@@ -672,7 +672,7 @@ const ChatPage = () => {
                   className="rounded-2xl max-h-64 object-cover"
                 />
               ) : (
-                <span className="leading-relaxed">{msg.content}</span>
+                <span className="leading-relaxed break-words [overflow-wrap:anywhere]">{msg.content}</span>
               )}
 
               <div
@@ -693,7 +693,7 @@ const ChatPage = () => {
   };
 
   return (
-    <Layout className="h-[calc(100vh-88px)] m-4 overflow-hidden rounded-[28px] bg-white border border-gray-100 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+    <Layout className="h-[calc(100vh-88px)] m-4 w-full max-w-[1180px] overflow-hidden rounded-[28px] bg-white border border-gray-100 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
       <Sider
         width={310}
         theme="light"
@@ -795,7 +795,7 @@ const ChatPage = () => {
         </div>
       </Sider>
 
-      <Content className="flex flex-col bg-gradient-to-br from-[#F8FAFC] via-[#F5F7FB] to-[#EEF2FF]">
+      <Content className="flex min-w-0 flex-col bg-gradient-to-br from-[#F8FAFC] via-[#F5F7FB] to-[#EEF2FF]">
         {selectedPartner ? (
           <>
             <div className="h-[76px] px-6 bg-white/85 backdrop-blur border-b border-gray-100 flex justify-between items-center shadow-sm z-10">
@@ -843,7 +843,7 @@ const ChatPage = () => {
               </Dropdown>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-7 py-6 space-y-5 custom-scrollbar">
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-7 py-6 space-y-5 custom-scrollbar">
               {loadingHistory ? (
                 <div className="text-center mt-8">
                   <Spin />
