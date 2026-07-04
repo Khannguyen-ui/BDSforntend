@@ -130,43 +130,34 @@ const LocationPicker = ({ onCoordinatesChange, initialLat = 10.7769, initialLng 
 
             if (res.data && res.data.address) {
                 const addr = res.data.address;
-                const normalizeDistrict = (addr) =>
-                    addr.city_district ||
-                    addr.county ||
-                    addr.district ||
-                    '';
-
-                const normalizeWard = (addr) =>
-                    addr.suburb ||
-                    addr.quarter ||
-                    addr.neighbourhood ||
-                    addr.village ||
-                    addr.residential ||
-                    '';
-
-                const normalizeStreet = (addr) =>
-                    addr.road ||
-                    addr.street ||
-                    addr.pedestrian ||
-                    addr.footway ||
-                    addr.path ||
-                    '';
-
                 const province =
                     addr.city ||
                     addr.province ||
                     addr.state ||
                     '';
 
-                const district = normalizeDistrict(addr);
-                const ward = normalizeWard(addr);
-                const street = normalizeStreet(addr);
+                const ward =
+                    addr.village ||
+                    addr.quarter ||
+                    addr.neighbourhood ||
+                    addr.residential ||
+                    addr.suburb ||
+                    addr.town ||
+                    addr.city_district ||
+                    addr.county ||
+                    '';
+
+                const legacyDistrict =
+                    addr.county ||
+                    addr.district ||
+                    addr.city_district ||
+                    '';
 
                 const addressData = {
                     province,
-                    district,
                     ward,
-                    street,
+                    district: legacyDistrict,
+                    street: addr.road || addr.street || '',
                     fullAddress: res.data.display_name
                 };
                 onCoordinatesChange(newPos.lat, newPos.lng, addressData);
