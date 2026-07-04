@@ -66,10 +66,8 @@ const ChatPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [rooms, setRooms] = useState([]);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submittingAppointment, setSubmittingAppointment] = useState(false);
-
   const [typingPartner, setTypingPartner] = useState(false);
   const [partnerPresence, setPartnerPresence] = useState({
     online: false,
@@ -111,6 +109,23 @@ const ChatPage = () => {
   const getPartnerId = (item) => {
     if (!item) return null;
     return item.partnerId || item.userId || item.id;
+  };
+
+  const parsePropertyCard = (msg) => {
+    if (!msg?.content) return null;
+
+    try {
+      const parsed =
+        typeof msg.content === "string" ? JSON.parse(msg.content) : msg.content;
+
+      if (parsed && typeof parsed === "object" && (parsed.id || parsed.title)) {
+        return parsed;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
   };
 
   const fetchConversations = async () => {
@@ -569,72 +584,68 @@ const ChatPage = () => {
     ];
   };
 
+  const renderPropertyCard = (msg, index, isMe, card) => {
+    return (
+      <div
+        key={msg.id || msg.tempId || index}
+        className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
+      >
+        {!isMe && (
+          <Avatar
+            size={32}
+            src={selectedPartner.avatar}
+            icon={<UserOutlined />}
+            className="mr-2 mt-auto shadow-sm flex-shrink-0"
+          />
+        )}
+
+        <div
+          onClick={() => card?.id && navigate(`/rooms/${card.id}`)}
+          className="w-[310px] max-w-[72%] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-[1px] transition-all"
+        >
+          {card?.image ? (
+            <img
+              src={card.image}
+              alt={card.title || "property"}
+              className="w-full h-40 object-cover"
+            />
+          ) : (
+            <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+              Không có ảnh
+            </div>
+          )}
+
+          <div className="p-3.5">
+            <div className="font-semibold text-sm leading-snug mb-1 line-clamp-2 text-gray-800">
+              {card?.title || "Tin bất động sản"}
+            </div>
+
+            <div className="text-sm font-bold text-[#E03C31]">
+              {Number(card?.price || 0).toLocaleString("vi-VN")} đ/tháng
+            </div>
+
+            <div className="text-[12px] mt-1 truncate text-gray-500">
+              📍 {card?.address || "Chưa có địa chỉ"}
+            </div>
+
+            <div className="text-[10px] mt-2 text-right text-gray-400">
+              {dayjs(msg.createdAt).format("HH:mm")}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderMessage = (msg, index) => {
     const isMe =
       currentUserId && String(msg.senderId) === String(currentUserId);
 
+    const card = msg.type === "PROPERTY_CARD" ? parsePropertyCard(msg) : parsePropertyCard(msg);
     const isImage = msg.type === "IMAGE";
-    const isCard = msg.type === "PROPERTY_CARD";
 
-    if (isCard) {
-      let card = null;
-
-      try {
-        card = JSON.parse(msg.content);
-      } catch {
-        card = null;
-      }
-
-      return (
-        <div
-          key={msg.id || msg.tempId || index}
-          className={`flex w-full min-w-0 ${isMe ? "justify-end" : "justify-start"}`}
-        >
-          {!isMe && (
-            <Avatar
-              size={32}
-              src={selectedPartner.avatar}
-              icon={<UserOutlined />}
-              className="mr-2 mt-auto shadow-sm"
-            />
-          )}
-
-          <div
-            onClick={() => card?.id && navigate(`/rooms/${card.id}`)}
-            className="w-fit max-w-[min(310px,78%)] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-[1px] transition-all"
-          >
-            {card?.image ? (
-              <img
-                src={card.image}
-                alt={card.title}
-                className="w-full h-40 object-cover"
-              />
-            ) : (
-              <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                Không có ảnh
-              </div>
-            )}
-
-            <div className="p-3.5">
-              <div className="font-semibold text-sm leading-snug mb-1 line-clamp-2 text-gray-800">
-                {card?.title}
-              </div>
-
-              <div className="text-sm font-bold text-[#E03C31]">
-                {card?.price?.toLocaleString("vi-VN")} đ/tháng
-              </div>
-
-              <div className="text-[12px] mt-1 truncate text-gray-500">
-                📍 {card?.address}
-              </div>
-
-              <div className="text-[10px] mt-2 text-right text-gray-400">
-                {dayjs(msg.createdAt).format("HH:mm")}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+    if (card && !isImage) {
+      return renderPropertyCard(msg, index, isMe, card);
     }
 
     const actionItems = renderMessageActions(msg, isMe);
@@ -642,21 +653,21 @@ const ChatPage = () => {
     return (
       <div
         key={msg.id || msg.tempId || index}
-        className={`flex group w-full min-w-0 ${isMe ? "justify-end" : "justify-start"}`}
+        className={`flex group w-full ${isMe ? "justify-end" : "justify-start"}`}
       >
         {!isMe && (
           <Avatar
             size={32}
             src={selectedPartner.avatar}
             icon={<UserOutlined />}
-            className="mr-2 mt-auto shadow-sm"
+            className="mr-2 mt-auto shadow-sm flex-shrink-0"
           />
         )}
 
-        <div className="relative min-w-0 max-w-[68%]">
+        <div className="relative max-w-[68%] min-w-0">
           <Dropdown menu={{ items: actionItems }} trigger={["click"]}>
             <div
-              className={`max-w-full overflow-hidden px-4 py-2.5 rounded-3xl text-sm shadow-sm relative whitespace-pre-wrap break-words cursor-pointer transition-all hover:shadow-md ${
+              className={`px-4 py-2.5 rounded-3xl text-sm shadow-sm relative whitespace-pre-wrap break-words [overflow-wrap:anywhere] cursor-pointer transition-all hover:shadow-md ${
                 isMe
                   ? "bg-gradient-to-br from-[#E03C31] to-[#ff6b5f] text-white rounded-br-lg"
                   : "bg-white text-gray-800 rounded-bl-lg border border-gray-100"
@@ -672,7 +683,9 @@ const ChatPage = () => {
                   className="rounded-2xl max-h-64 object-cover"
                 />
               ) : (
-                <span className="leading-relaxed break-words [overflow-wrap:anywhere]">{msg.content}</span>
+                <span className="leading-relaxed break-words [overflow-wrap:anywhere]">
+                  {msg.content}
+                </span>
               )}
 
               <div
@@ -693,18 +706,18 @@ const ChatPage = () => {
   };
 
   return (
-    <Layout className="h-[calc(100vh-88px)] m-4 w-full max-w-[1180px] overflow-hidden rounded-[28px] bg-white border border-gray-100 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+    <Layout className="h-[calc(100vh-96px)] max-h-[calc(100vh-96px)] m-4 overflow-hidden rounded-[28px] bg-white border border-gray-100 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
       <Sider
         width={310}
         theme="light"
         className="border-r border-gray-100 bg-white flex flex-col h-full"
       >
-        <div className="p-5 border-b border-gray-100 bg-white">
+        <div className="p-5 border-b border-gray-100 bg-white flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-xl font-bold text-gray-900">Tin nhắn</div>
               <div className="text-xs text-gray-400">
-                {isConnected ? "Realtime đã kết nối" : "Đang mất kết nối"}
+                {isConnected ? "Đã kết nối" : "Đang mất kết nối"}
               </div>
             </div>
 
@@ -727,7 +740,7 @@ const ChatPage = () => {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar bg-[#FAFBFD]">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 custom-scrollbar bg-[#FAFBFD]">
           {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-52 text-gray-400 text-xs text-center px-4">
               <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3">
@@ -795,12 +808,12 @@ const ChatPage = () => {
         </div>
       </Sider>
 
-      <Content className="flex min-w-0 flex-col bg-gradient-to-br from-[#F8FAFC] via-[#F5F7FB] to-[#EEF2FF]">
+      <Content className="flex flex-col min-h-0 bg-gradient-to-br from-[#F8FAFC] via-[#F5F7FB] to-[#EEF2FF]">
         {selectedPartner ? (
           <>
-            <div className="h-[76px] px-6 bg-white/85 backdrop-blur border-b border-gray-100 flex justify-between items-center shadow-sm z-10">
-              <div className="flex items-center gap-3">
-                <div className="relative">
+            <div className="h-[76px] px-6 bg-white/85 backdrop-blur border-b border-gray-100 flex justify-between items-center shadow-sm z-10 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative flex-shrink-0">
                   <Avatar
                     size={46}
                     src={selectedPartner.avatar}
@@ -813,12 +826,12 @@ const ChatPage = () => {
                   )}
                 </div>
 
-                <div>
-                  <div className="font-bold text-gray-900 text-base">
+                <div className="min-w-0">
+                  <div className="font-bold text-gray-900 text-base truncate">
                     {selectedPartner.fullName || "Người dùng"}
                   </div>
 
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 truncate">
                     {partnerPresence.online
                       ? "Đang hoạt động"
                       : partnerPresence.lastSeen
@@ -838,12 +851,12 @@ const ChatPage = () => {
                 <Button
                   icon={<MoreOutlined />}
                   type="text"
-                  className="text-gray-500 rounded-full hover:bg-gray-100"
+                  className="text-gray-500 rounded-full hover:bg-gray-100 flex-shrink-0"
                 />
               </Dropdown>
             </div>
 
-            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-7 py-6 space-y-5 custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-7 py-6 space-y-5 custom-scrollbar">
               {loadingHistory ? (
                 <div className="text-center mt-8">
                   <Spin />
@@ -863,7 +876,7 @@ const ChatPage = () => {
                     size={32}
                     src={selectedPartner.avatar}
                     icon={<UserOutlined />}
-                    className="mr-2 shadow-sm"
+                    className="mr-2 shadow-sm flex-shrink-0"
                   />
                   <div className="bg-white border border-gray-100 px-4 py-2 rounded-3xl text-xs text-gray-400 shadow-sm">
                     Đang nhập...
@@ -874,7 +887,7 @@ const ChatPage = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-5 bg-white/90 backdrop-blur border-t border-gray-100">
+            <div className="p-5 bg-white/90 backdrop-blur border-t border-gray-100 flex-shrink-0">
               <div className="flex items-end gap-3 bg-gray-100 rounded-[24px] px-3 py-2">
                 <Upload
                   customRequest={handleImageUpload}
@@ -908,7 +921,7 @@ const ChatPage = () => {
                   size="large"
                   icon={<SendOutlined />}
                   onClick={handleSend}
-                  className="bg-[#E03C31] border-[#E03C31] shadow-md hover:scale-105 transition-transform"
+                  className="bg-[#E03C31] border-[#E03C31] shadow-md hover:scale-105 transition-transform flex-shrink-0"
                 />
               </div>
             </div>
